@@ -80,16 +80,6 @@
     margin-top: 4px;
   }
 
-  .hats-row {
-    display: flex;
-    gap: 4px;
-    margin-top: 10px;
-  }
-  .hat-dot {
-    width: 14px; height: 14px;
-    border-radius: 50%;
-  }
-
   .nav-section {
     padding: 16px 12px 8px;
     font-size: 10px;
@@ -148,17 +138,6 @@
     padding: 22px;
     margin-bottom: 20px;
   }
-  .panel-title {
-    font-family: 'Space Grotesk', sans-serif;
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--text);
-    margin-bottom: 16px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .panel-title span { color: var(--accent2); }
 
   /* ─── BUTTONS ─── */
   .btn {
@@ -232,8 +211,6 @@
     transition: all 0.15s;
   }
   .check-box.checked { background: var(--success); border-color: var(--success); color: #fff; font-size: 13px; }
-  .check-box.late { background: var(--warning); border-color: var(--warning); color: #000; font-size: 13px; }
-  .check-box.absent { background: var(--danger); border-color: var(--danger); color: #fff; font-size: 13px; }
 
   /* ─── SCORE INPUT ─── */
   .score-input { width: 70px; text-align: center; padding: 5px; border-radius: 6px; }
@@ -270,17 +247,6 @@
     padding: 40px;
   }
   .display-page.open { display: block; }
-
-  .tab-row { display: flex; gap: 2px; background: var(--surface2); border-radius: 10px; padding: 3px; margin-bottom: 20px; width: fit-content; }
-  .tab-btn {
-    padding: 7px 16px; border-radius: 8px; border: none; background: transparent; color: var(--text2);
-    font-family: 'Noto Sans TC', sans-serif; font-size: 13px; cursor: pointer; transition: all 0.15s;
-  }
-  .tab-btn.active { background: var(--surface); color: var(--text); font-weight: 600; }
-
-  .badge { padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; }
-  .badge-gray { background: var(--surface3); color: var(--text2); }
-  .badge-accent { background: var(--accent-glow); color: var(--accent2); }
 
   ::-webkit-scrollbar { width: 6px; }
   ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 10px; }
@@ -453,17 +419,35 @@ let state = {
   groups: [],
   assignments: [],
   records: {},
-  scores: {},      // { assignId: { entityId: score } }
-  adjustments: {}, // { assignId: { studentId: extra } }
+  scores: {},      
+  adjustments: {}, 
   attendance: {},
   attendanceDates: []
 };
 
 function save() { localStorage.setItem('sixhats_v5', JSON.stringify(state)); }
+
 function load() {
-  const d = localStorage.getItem('sixhats_v5');
-  if (d) state = JSON.parse(d);
+  try {
+    const d = localStorage.getItem('sixhats_v5');
+    if (d) {
+      const parsed = JSON.parse(d);
+      // 防呆設計：確保所有屬性都有預設值，避免舊版快取導致 map is not a function 錯誤
+      state.students = parsed.students || [];
+      state.groups = parsed.groups || [];
+      state.assignments = parsed.assignments || [];
+      state.records = parsed.records || {};
+      state.scores = parsed.scores || {};
+      state.adjustments = parsed.adjustments || {};
+      state.attendance = parsed.attendance || {};
+      state.attendanceDates = parsed.attendanceDates || [];
+    }
+  } catch (e) {
+    console.error("讀取儲存資料失敗，重置為預設狀態", e);
+  }
 }
+
+// 初始讀取
 load();
 
 function uid() { return '_' + Math.random().toString(36).slice(2, 9); }
@@ -474,6 +458,8 @@ function closeModal(id) { document.getElementById(id).classList.remove('open'); 
 //  NAVIGATION
 // ══════════════════════════════════════════════════════════
 function navigate(el) {
+  load(); // 每次切換頁面強制重新讀取，確保多個分頁或錯誤後資料能同步
+  
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   el.classList.add('active');
   document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
@@ -489,12 +475,20 @@ function navigate(el) {
 //  STUDENTS & GROUPS
 // ══════════════════════════════════════════════════════════
 function addStudent() {
-  const name = document.getElementById('newStudentName').value;
-  const seatNo = document.getElementById('newStudentId').value;
+  const nameInput = document.getElementById('newStudentName');
+  const seatInput = document.getElementById('newStudentId');
+  const name = nameInput.value.trim();
+  const seatNo = seatInput.value.trim();
+  
   if(!name || !seatNo) return;
   state.students.push({ id: uid(), name, seatNo, groupId: null });
-  state.students.sort((a,b) => a.seatNo - b.seatNo);
-  save(); renderStudentTable();
+  state.students.sort((a,b) => parseInt(a.seatNo) - parseInt(b.seatNo));
+  save(); 
+  renderStudentTable();
+  
+  // 清空輸入框
+  nameInput.value = '';
+  seatInput.value = '';
 }
 
 function renderStudentTable() {
@@ -505,15 +499,21 @@ function renderStudentTable() {
       <td>${s.seatNo}</td>
       <td>${s.name}</td>
       <td><select onchange="updateSGroup('${s.id}', this.value)">${grpOpts}</select></td>
-      <td><button onclick="delStudent('${s.id}')">刪除</button></td>
+      <td><button class="btn btn-danger btn-xs" onclick="delStudent('${s.id}')">刪除</button></td>
     </tr>`;
   }).join('');
 }
+
 function updateSGroup(sid, gid) { 
   state.students.find(s => s.id === sid).groupId = gid || null; 
   save(); 
 }
-function delStudent(id) { state.students = state.students.filter(s=>s.id!==id); save(); renderStudentTable(); }
+
+function delStudent(id) { 
+    state.students = state.students.filter(s=>s.id!==id); 
+    save(); 
+    renderStudentTable(); 
+}
 
 function doBulkImport() {
   const text = document.getElementById('bulkText').value;
@@ -521,50 +521,77 @@ function doBulkImport() {
     const p = line.trim().split(/\s+/);
     if(p.length >= 2) state.students.push({ id: uid(), name: p[1], seatNo: p[0], groupId: null });
   });
-  state.students.sort((a,b) => a.seatNo - b.seatNo);
-  save(); closeModal('bulkModal'); renderStudentTable();
+  state.students.sort((a,b) => parseInt(a.seatNo) - parseInt(b.seatNo));
+  save(); 
+  closeModal('bulkModal'); 
+  renderStudentTable();
+  document.getElementById('bulkText').value = '';
 }
 
 function addGroup() {
-  const name = document.getElementById('newGroupName').value;
+  const nameInput = document.getElementById('newGroupName');
+  const name = nameInput.value.trim();
   if(!name) return;
   state.groups.push({ id: uid(), name });
-  save(); renderGroupCards();
+  save(); 
+  renderGroupCards();
+  renderStudentTable(); // 更新學生清單中的群組下拉選單
+  nameInput.value = '';
 }
+
 function renderGroupCards() {
     document.getElementById('groupCards').innerHTML = state.groups.map(g => `
         <div class="panel">
             <strong>${g.name}</strong>
-            <button class="btn btn-danger btn-xs" onclick="delGroup('${g.id}')">刪除</button>
+            <button class="btn btn-danger btn-xs" style="margin-left:10px" onclick="delGroup('${g.id}')">刪除</button>
         </div>
     `).join('');
 }
+
 function delGroup(id) { 
     state.groups = state.groups.filter(g=>g.id!==id); 
     state.students.forEach(s => { if(s.groupId === id) s.groupId = null; });
-    save(); renderGroupCards(); 
+    save(); 
+    renderGroupCards(); 
+    renderStudentTable();
 }
 
 // ══════════════════════════════════════════════════════════
 //  ASSIGNMENTS
 // ══════════════════════════════════════════════════════════
 function addAssignment() {
-  const name = document.getElementById('newAssignName').value;
-  const scoreMode = document.getElementById('newAssignScoreMode').value;
-  const max = document.getElementById('newAssignMaxScore').value;
+  const nameInput = document.getElementById('newAssignName');
+  const modeInput = document.getElementById('newAssignScoreMode');
+  const maxInput = document.getElementById('newAssignMaxScore');
+  
+  const name = nameInput.value.trim();
+  const scoreMode = modeInput.value;
+  const max = maxInput.value;
+  
   if(!name) return;
   state.assignments.push({ id: uid(), name, scoreMode, maxScore: max });
-  save(); renderAssignList();
+  save(); 
+  renderAssignList();
+  
+  // 清空輸入框
+  nameInput.value = '';
+  maxInput.value = '100';
 }
+
 function renderAssignList() {
     document.getElementById('assignmentList').innerHTML = state.assignments.map(a => `
-        <div style="padding:10px; border-bottom:1px solid #333;">
-            ${a.name} (${a.scoreMode==='group'?'小組':'個人'}) - 滿分 ${a.maxScore}
-            <button onclick="delAssign('${a.id}')">刪除</button>
+        <div style="padding:10px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+            <span>${a.name} (${a.scoreMode==='group'?'小組':'個人'}) - 滿分 ${a.maxScore}</span>
+            <button class="btn btn-danger btn-xs" onclick="delAssign('${a.id}')">刪除</button>
         </div>
     `).join('');
 }
-function delAssign(id) { state.assignments = state.assignments.filter(a=>a.id!==id); save(); renderAssignList(); }
+
+function delAssign(id) { 
+    state.assignments = state.assignments.filter(a=>a.id!==id); 
+    save(); 
+    renderAssignList(); 
+}
 
 // ══════════════════════════════════════════════════════════
 //  RECORDS (繳交)
@@ -582,6 +609,7 @@ function renderRecords() {
         return `<tr><td>${s.seatNo} ${s.name}</td>${cells}</tr>`;
     }).join('');
 }
+
 function toggleRec(aid, sid) {
     if(!state.records[aid]) state.records[aid] = {};
     state.records[aid][sid] = state.records[aid][sid] === 'checked' ? 'none' : 'checked';
@@ -589,7 +617,7 @@ function toggleRec(aid, sid) {
 }
 
 // ══════════════════════════════════════════════════════════
-//  SCORES (評分管理) - 修正重點
+//  SCORES (評分管理)
 // ══════════════════════════════════════════════════════════
 function populateScoreSelect() {
     const sel = document.getElementById('scoreAssignSelect');
@@ -597,43 +625,58 @@ function populateScoreSelect() {
 }
 
 function renderScores() {
-    const aid = document.getElementById('scoreAssignSelect').value;
+    const selectEl = document.getElementById('scoreAssignSelect');
     const container = document.getElementById('scoresContent');
+    
+    if(!selectEl || selectEl.options.length === 0) {
+        container.innerHTML = "<p style='color:var(--text2);'>請先至「設定 > 作業設定」建立作業</p>"; 
+        return; 
+    }
+
+    const aid = selectEl.value;
     const assign = state.assignments.find(a => a.id === aid);
-    if(!assign) { container.innerHTML = "請先建立作業"; return; }
+    if(!assign) return;
 
     let html = '';
     if(assign.scoreMode === 'group') {
         html = `<h3>小組評分模式 (輸入組分將自動套用至全組)</h3>
-        <div class="table-wrap"><table>
+        <div class="table-wrap" style="margin-top:12px;"><table>
             <thead><tr><th>組別</th><th>分數</th><th>操作</th></tr></thead>
             <tbody>` + state.groups.map(g => {
-                const score = (state.scores[aid] || {})[g.id] || '';
+                // 修復 0 分被判定為空的 Bug
+                let score = (state.scores[aid] || {})[g.id];
+                const displayScore = (score !== undefined && score !== null) ? score : '';
                 return `<tr>
                     <td>${g.name}</td>
-                    <td><input type="number" class="score-input" value="${score}" onchange="setScore('${aid}','${g.id}',this.value, true)"></td>
+                    <td><input type="number" class="score-input" value="${displayScore}" onchange="setScore('${aid}','${g.id}',this.value)"></td>
                     <td><button class="btn btn-secondary btn-xs" onclick="openAdj('${aid}','${g.id}')">組員加扣分</button></td>
                 </tr>`;
             }).join('') + `</tbody></table></div>`;
     } else {
         html = `<h3>個人評分模式</h3>
-        <div class="table-wrap"><table>
+        <div class="table-wrap" style="margin-top:12px;"><table>
             <thead><tr><th>座號</th><th>姓名</th><th>分數</th></tr></thead>
             <tbody>` + state.students.map(s => {
-                const score = (state.scores[aid] || {})[s.id] || '';
+                // 修復 0 分被判定為空的 Bug
+                let score = (state.scores[aid] || {})[s.id];
+                const displayScore = (score !== undefined && score !== null) ? score : '';
                 return `<tr>
                     <td>${s.seatNo}</td>
                     <td>${s.name}</td>
-                    <td><input type="number" class="score-input" value="${score}" onchange="setScore('${aid}','${s.id}',this.value, false)"></td>
+                    <td><input type="number" class="score-input" value="${displayScore}" onchange="setScore('${aid}','${s.id}',this.value)"></td>
                 </tr>`;
             }).join('') + `</tbody></table></div>`;
     }
     container.innerHTML = html;
 }
 
-function setScore(aid, entityId, val, isGroup) {
+function setScore(aid, entityId, val) {
     if(!state.scores[aid]) state.scores[aid] = {};
-    state.scores[aid][entityId] = parseFloat(val);
+    if(val.trim() === '') {
+        delete state.scores[aid][entityId]; // 若清空欄位則刪除該筆分數
+    } else {
+        state.scores[aid][entityId] = parseFloat(val);
+    }
     save();
 }
 
@@ -641,10 +684,11 @@ function openAdj(aid, gid) {
     const members = state.students.filter(s => s.groupId === gid);
     const container = document.getElementById('adjModalContent');
     container.innerHTML = members.map(s => {
-        const adj = (state.adjustments[aid] || {})[s.id] || 0;
-        return `<div style="margin-bottom:8px; display:flex; justify-content:between; align-items:center;">
+        let adj = (state.adjustments[aid] || {})[s.id];
+        const displayAdj = (adj !== undefined && adj !== null) ? adj : 0;
+        return `<div style="margin-bottom:12px; display:flex; justify-content:space-between; align-items:center;">
             <span>${s.seatNo} ${s.name}</span>
-            <input type="number" class="score-input" placeholder="加減分" value="${adj}" onchange="setAdj('${aid}','${s.id}',this.value)">
+            <input type="number" class="score-input" placeholder="加減分" value="${displayAdj}" onchange="setAdj('${aid}','${s.id}',this.value)">
         </div>`;
     }).join('');
     openModal('adjModal');
@@ -652,7 +696,11 @@ function openAdj(aid, gid) {
 
 function setAdj(aid, sid, val) {
     if(!state.adjustments[aid]) state.adjustments[aid] = {};
-    state.adjustments[aid][sid] = parseFloat(val);
+    if(val.trim() === '') {
+        delete state.adjustments[aid][sid];
+    } else {
+        state.adjustments[aid][sid] = parseFloat(val);
+    }
     save();
 }
 
@@ -660,12 +708,16 @@ function setAdj(aid, sid, val) {
 //  ATTENDANCE
 // ══════════════════════════════════════════════════════════
 function addAttDate() {
-    const d = document.getElementById('newAttDate').value;
+    const dInput = document.getElementById('newAttDate');
+    const d = dInput.value;
     if(!d || state.attendanceDates.includes(d)) return;
     state.attendanceDates.push(d);
     state.attendanceDates.sort();
-    save(); renderAttendance();
+    save(); 
+    renderAttendance();
+    dInput.value = '';
 }
+
 function renderAttendance() {
     const head = document.getElementById('attendanceHead');
     const body = document.getElementById('attendanceBody');
@@ -675,9 +727,10 @@ function renderAttendance() {
             const status = (state.attendance[d] || {})[s.id] || 'none';
             return `<td><div class="check-box ${status==='checked'?'checked':''}" onclick="toggleAtt('${d}','${s.id}')">${status==='checked'?'V':''}</div></td>`;
         }).join('');
-        return `<tr><td>${s.name}</td>${cells}</tr>`;
+        return `<tr><td>${s.seatNo} ${s.name}</td>${cells}</tr>`;
     }).join('');
 }
+
 function toggleAtt(d, sid) {
     if(!state.attendance[d]) state.attendance[d] = {};
     state.attendance[d][sid] = state.attendance[d][sid] === 'checked' ? 'none' : 'checked';
@@ -688,6 +741,7 @@ function toggleAtt(d, sid) {
 //  DISPLAY & EXPORT
 // ══════════════════════════════════════════════════════════
 function openDisplay() {
+    load(); // 開啟報表前確保讀取最新資料
     const c = document.getElementById('displayContent');
     c.innerHTML = `<table>
         <thead><tr><th>座號</th><th>姓名</th>${state.assignments.map(a=>`<th>${a.name}</th>`).join('')}<th>總分</th></tr></thead>
@@ -696,11 +750,16 @@ function openDisplay() {
             const cells = state.assignments.map(a => {
                 let score = 0;
                 if(a.scoreMode === 'group') {
-                    score = (state.scores[a.id] || {})[s.groupId] || 0;
+                    let rawScore = (state.scores[a.id] || {})[s.groupId];
+                    score = (rawScore !== undefined && rawScore !== null) ? rawScore : 0;
                 } else {
-                    score = (state.scores[a.id] || {})[s.id] || 0;
+                    let rawScore = (state.scores[a.id] || {})[s.id];
+                    score = (rawScore !== undefined && rawScore !== null) ? rawScore : 0;
                 }
-                const adj = (state.adjustments[a.id] || {})[s.id] || 0;
+                
+                let rawAdj = (state.adjustments[a.id] || {})[s.id];
+                const adj = (rawAdj !== undefined && rawAdj !== null) ? rawAdj : 0;
+                
                 const final = score + adj;
                 total += final;
                 return `<td>${final}</td>`;
@@ -709,18 +768,25 @@ function openDisplay() {
         }).join('') + `</tbody></table>`;
     document.getElementById('displayPage').classList.add('open');
 }
+
 function closeDisplay() { document.getElementById('displayPage').classList.remove('open'); }
 
 function exportData() {
     const blob = new Blob([JSON.stringify(state)], {type:'application/json'});
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `backup_${new Date().getTime()}.json`;
+    a.download = `backup_sixhats_${new Date().getTime()}.json`;
     a.click();
 }
-function clearAll() { if(confirm('確定清除所有資料？')) { localStorage.clear(); location.reload(); } }
 
-// 初始化介面
+function clearAll() { 
+    if(confirm('確定清除所有資料？這將無法復原。')) { 
+        localStorage.removeItem('sixhats_v5'); 
+        location.reload(); 
+    } 
+}
+
+// 初始渲染
 renderStudentTable();
 renderGroupCards();
 renderAssignList();
