@@ -393,11 +393,12 @@
   .ta-only { display: none; }
 
   @media (max-width: 768px) {
-    .sidebar { transform: translateX(-220px); }
-    .main { margin-left: 0; padding: 16px; }
-    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    .sidebar { transform: translateX(-220px); transition: transform 0.3s ease; }
+    .sidebar.open { transform: translateX(0); box-shadow: var(--shadow); }
+    .main { margin-left: 0; padding: 16px; padding-top: 20px; }
     /* Ensure TA sync button visible on mobile */
     .ta-sync-mobile { display: block !important; margin-bottom: 20px; }
+    #mobileMenuBtn { display: block !important; }
   }
 </style>
 </head>
@@ -450,6 +451,10 @@
   </aside>
 
   <main class="main">
+    
+    <div id="mobileMenuBtn" style="display:none; margin-bottom:20px;">
+      <button class="btn btn-secondary" onclick="document.querySelector('.sidebar').classList.toggle('open')" style="padding:8px 12px; font-size:14px; background:var(--surface2);">☰ 選單 (切換頁面)</button>
+    </div>
 
     <div id="page-setup-students" class="page admin-only">
       <div class="page-header">
@@ -550,7 +555,14 @@
         <h1>出缺席紀錄</h1>
         <p>點擊格子切換出缺席狀態：<span style="color:var(--success)">[V]出席</span>、<span style="color:var(--danger)">[X]缺席</span>、<span style="color:var(--warning)">[L]遲到</span></p>
       </div>
-      <div class="panel">
+      
+      <div class="ta-only ta-sync-mobile" style="display:none;">
+        <button class="btn btn-primary" onclick="generateSyncLink()" style="width:100%; justify-content:center; background:var(--accent2); border:1px solid var(--accent); margin-bottom:15px; padding:12px;">
+           📤 產生同步連結回傳老師
+        </button>
+      </div>
+
+      <div class="panel admin-only">
         <div class="panel-title"><span>+</span> 新增日期</div>
         <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
           <div><input type="date" id="newAttDate" style="width:160px"></div>
@@ -711,8 +723,6 @@ let state = {
   attendanceRecords: {}
 };
 
-const GROUP_COLORS = ['#6c63ff','#ff5c5c','#06d6a0','#ffd166','#118ab2','#ff9f1c','#e63946','#2ec4b6','#a8dadc','#c77dff'];
-
 function save() { localStorage.setItem('sixhats_v4', JSON.stringify(state)); }
 
 function load() {
@@ -723,9 +733,24 @@ function load() {
       if (hashData && hashData[1]) {
         const urlData = decompressData(hashData[1]);
         
+        // 防呆設定：確保所有屬性存在
+        if(!urlData.scores) urlData.scores = {};
+        if(!urlData.adjustments) urlData.adjustments = {};
+        if(!urlData.records) urlData.records = {};
+        if(!urlData.attendanceDates) urlData.attendanceDates = [];
+        if(!urlData.attendanceRecords) urlData.attendanceRecords = {};
+        if(!urlData.assignments) urlData.assignments = [];
+
         if (appMode === 'sync') {
           const localData = localStorage.getItem('sixhats_v4');
           if (localData) state = JSON.parse(localData);
+          
+          if(!state.scores) state.scores = {};
+          if(!state.adjustments) state.adjustments = {};
+          if(!state.records) state.records = {};
+          if(!state.attendanceDates) state.attendanceDates = [];
+          if(!state.attendanceRecords) state.attendanceRecords = {};
+
           state.records = urlData.records || state.records;
           state.attendanceRecords = urlData.attendanceRecords || state.attendanceRecords;
           
@@ -761,6 +786,10 @@ function load() {
         if(!parsed.attendanceDates) parsed.attendanceDates = [];
         if(!parsed.attendanceRecords) parsed.attendanceRecords = {};
         if(!parsed.assignments) parsed.assignments = [];
+        // 防呆設定：確保舊資料能無痛升級
+        if(!parsed.scores) parsed.scores = {};
+        if(!parsed.adjustments) parsed.adjustments = {};
+        if(!parsed.records) parsed.records = {};
         state = parsed;
       } catch(e){} 
     }
@@ -769,6 +798,11 @@ function load() {
 load();
 
 function uid() { return '_' + Math.random().toString(36).slice(2, 10); }
+
+// 強制「座號順序」的核心排序函式
+function getSortedStudents() {
+  return [...state.students].sort((a,b) => a.seatNo.localeCompare(b.seatNo, undefined, {numeric:true}));
+}
 
 function updateAllDropdowns() {
   populateAssignFilter('recordAssignFilter');
@@ -793,6 +827,11 @@ function navigate(el) {
   if (page === 'stats') renderStats();
   if (page === 'setup-students') renderStudentTable();
   if (page === 'setup-groups') renderGroupCards();
+
+  // 手機版自動收合側邊欄
+  if (window.innerWidth <= 768) {
+    document.querySelector('.sidebar').classList.remove('open');
+  }
 }
 
 // ══════════════════════════════════════════════════════════
@@ -822,7 +861,8 @@ function renderStudentTable() {
   if(!tbody) return;
   document.getElementById('studentCount').textContent = state.students.length;
   if (!state.students.length) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text3);padding:24px;">尚未新增學生</td></tr>'; return; }
-  tbody.innerHTML = state.students.map(s => {
+  // 使用強制的座號排序
+  tbody.innerHTML = getSortedStudents().map(s => {
     const groupOpts = '<option value="">-- 未分組 --</option>' + state.groups.map(g => `<option value="${g.id}" ${s.groupId === g.id ? 'selected' : ''}>${g.name}</option>`).join('');
     return `<tr>
       <td><span class="badge badge-gray">${s.seatNo}</span></td>
@@ -889,7 +929,7 @@ function renderGroupCards() {
   if(!c) return;
   if (!state.groups.length) { c.innerHTML = '<div style="color:var(--text3);font-size:13px;padding:12px 0;">尚未建立組別</div>'; return; }
   c.innerHTML = state.groups.map(g => {
-    const members = state.students.filter(s => s.groupId === g.id);
+    const members = getSortedStudents().filter(s => s.groupId === g.id);
     return `<div class="panel" style="padding:16px;margin-bottom:0;">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
         <div style="width:12px;height:12px;border-radius:50%;background:${g.color};flex-shrink:0;"></div>
@@ -912,7 +952,7 @@ function openEditGroup(groupId) {
   const c = document.getElementById('editGroupContent');
   c.innerHTML = `<div style="font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:8px;"><div style="width:10px;height:10px;border-radius:50%;background:${g.color}"></div>${g.name}</div>
   <div style="max-height:320px;overflow-y:auto;">
-    ${state.students.map(s => {
+    ${getSortedStudents().map(s => {
       const inGroup = s.groupId === groupId;
       return `<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border);">
         <div class="check-box ${inGroup ? 'checked' : ''}" onclick="toggleStudentInGroup('${s.id}','${groupId}',this)">${inGroup ? 'V' : ''}</div>
@@ -1026,7 +1066,8 @@ function renderRecords() {
   
   if (recordView === 'individual') {
     thead.innerHTML = '<th>座號</th><th>姓名</th><th>組別</th>' + assigns.map(a => `<th style="text-align:center;white-space:nowrap;">${a.name}<br><span style="font-size:10px;color:var(--text3);font-weight:400;">${a.mode==='group'?'小組':'個人'}</span></th>`).join('') + '<th>繳交率</th>';
-    tbody.innerHTML = state.students.map(s => {
+    // 確保留在個人模式時，依舊為座號排序
+    tbody.innerHTML = getSortedStudents().map(s => {
       const grp = state.groups.find(g => g.id === s.groupId);
       let submitted = 0;
       const cells = assigns.map(a => {
@@ -1050,7 +1091,8 @@ function renderRecords() {
     if (!state.groups.length) { tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--text3);padding:24px;">尚未建立組別</td></tr>'; return; }
     thead.innerHTML = '<th>組別</th><th>成員</th>' + assigns.map(a => `<th style="text-align:center;">${a.name}</th>`).join('') + '<th>繳交率</th>';
     tbody.innerHTML = state.groups.map(g => {
-      const members = state.students.filter(s => s.groupId === g.id);
+      // 在小組名單內部的成員也依照座號排序
+      const members = getSortedStudents().filter(s => s.groupId === g.id);
       let submitted = 0;
       const cells = assigns.map(a => {
         const status = getRecord(a.id, g.id);
@@ -1139,7 +1181,8 @@ function renderAttendance() {
   
   thead.innerHTML = '<th>座號</th><th>姓名</th>' + state.attendanceDates.map(d => `<th style="text-align:center;white-space:nowrap;">${d.date} ${d.name}<br><button class="btn btn-danger btn-xs" style="margin-top:4px;" onclick="removeAttendanceDate('${d.id}')">刪除</button></th>`).join('') + '<th>出席率</th>';
   
-  tbody.innerHTML = state.students.map(s => {
+  // 使用強制的座號排序
+  tbody.innerHTML = getSortedStudents().map(s => {
     const cells = state.attendanceDates.map(d => {
       const status = state.attendanceRecords[d.id]?.[s.id] || 'none';
       return `<td class="check-cell" onclick="toggleAttendance('${d.id}','${s.id}')">${attBoxHTML(status)}</td>`;
@@ -1170,6 +1213,10 @@ function renderScores() {
   if (!assign) return;
   badge.textContent = assign.scoreMode === 'group' ? '小組分數模式' : '個人分數模式';
   badge.className = 'badge ' + (assign.scoreMode === 'group' ? 'badge-warning' : 'badge-success');
+  
+  // 雙重保證這些變數初始化，防止讀取時崩潰
+  if (!state.scores) state.scores = {};
+  if (!state.adjustments) state.adjustments = {};
   if (!state.scores[assignId]) state.scores[assignId] = {};
   if (!state.adjustments[assignId]) state.adjustments[assignId] = {};
 
@@ -1182,7 +1229,7 @@ function renderScores() {
           <thead><tr><th>組別</th><th>成員</th><th>組別分數 (/ ${assign.maxScore})</th><th>個別加扣分</th><th>操作</th></tr></thead>
           <tbody>
             ${state.groups.map(g => {
-              const members = state.students.filter(s => s.groupId === g.id);
+              const members = getSortedStudents().filter(s => s.groupId === g.id);
               const score = state.scores[assignId][g.id] ?? '';
               return `<tr>
                 <td><span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:8px;height:8px;border-radius:50%;background:${g.color}"></span>${g.name}</span></td>
@@ -1203,7 +1250,7 @@ function renderScores() {
         <table>
           <thead><tr><th>座號</th><th>姓名</th><th>組別</th><th>分數 (/ ${assign.maxScore})</th></tr></thead>
           <tbody>
-            ${state.students.map(s => {
+            ${getSortedStudents().map(s => {
               const grp = state.groups.find(g => g.id === s.groupId);
               const score = state.scores[assignId][s.id] ?? '';
               return `<tr>
@@ -1240,7 +1287,7 @@ function openAdj(assignId, groupId) {
   adjAssignId = assignId; adjGroupId = groupId;
   const assign = state.assignments.find(a => a.id === assignId);
   const g = state.groups.find(x => x.id === groupId);
-  const members = state.students.filter(s => s.groupId === groupId);
+  const members = getSortedStudents().filter(s => s.groupId === groupId);
   if (!state.adjustments[assignId]) state.adjustments[assignId] = {};
   document.getElementById('adjModalTitle').textContent = `${g.name} - 個別加扣分（作業：${assign.name}）`;
   document.getElementById('adjModalContent').innerHTML = members.map(s => {
@@ -1297,7 +1344,7 @@ function renderPadletGroups(assignId) {
       const status = getRecord(assignId, g.id);
       return `<div class="padlet-group-card ${status !== 'none' ? 'submitted' : ''}" onclick="togglePadletEntity('${assignId}','${g.id}',this,true)">
         <div style="width:10px;height:10px;border-radius:50%;background:${g.color};flex-shrink:0;"></div>
-        <div><div style="font-weight:600;font-size:13px;">${g.name}</div><div style="font-size:11px;color:var(--text2);">${state.students.filter(s=>s.groupId===g.id).map(s=>s.seatNo).join(', ')}</div></div>
+        <div><div style="font-weight:600;font-size:13px;">${g.name}</div><div style="font-size:11px;color:var(--text2);">${getSortedStudents().filter(s=>s.groupId===g.id).map(s=>s.seatNo).join(', ')}</div></div>
         <div style="margin-left:auto;font-size:14px;">${status !== 'none' ? 'V' : ''}</div>
       </div>`;
     }).join('')}
@@ -1306,7 +1353,7 @@ function renderPadletGroups(assignId) {
 function renderPadletStudents(assignId) {
   if (!state.students.length) return '<div style="color:var(--text3);">尚未新增學生</div>';
   return `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin-top:8px;">
-    ${state.students.map(s => {
+    ${getSortedStudents().map(s => {
       const status = getRecord(assignId, s.id);
       return `<div class="padlet-group-card ${status !== 'none' ? 'submitted' : ''}" onclick="togglePadletEntity('${assignId}','${s.id}',this,false)">
         <span class="badge badge-gray">${s.seatNo}</span><span style="font-size:12.5px;">${s.name}</span>
@@ -1415,7 +1462,7 @@ function renderDisplay() {
           <th>繳交率</th><th>平均分數</th>
         </tr></thead>
         <tbody>
-          ${state.students.map(s => {
+          ${getSortedStudents().map(s => {
             const grp = state.groups.find(g => g.id === s.groupId);
             let sub = 0;
             const cells = state.assignments.map(a => {
@@ -1454,7 +1501,7 @@ function renderDisplay() {
   } else {
     if (!state.groups.length) { c.innerHTML = '<div style="text-align:center;color:var(--text2);">尚未建立組別</div>'; return; }
     c.innerHTML = state.groups.map(g => {
-      const members = state.students.filter(s => s.groupId === g.id);
+      const members = getSortedStudents().filter(s => s.groupId === g.id);
       return `<div class="panel" style="margin-bottom:20px;">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;"><div style="width:14px;height:14px;border-radius:50%;background:${g.color}"></div><span style="font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;">${g.name}</span><span class="badge badge-gray">${g.label}</span><span class="badge badge-gray" style="margin-left:auto;">${members.length} 人</span></div>
         <div class="display-table-wrap">
@@ -1576,7 +1623,8 @@ function exportExcel() {
   state.assignments.forEach(a => headers.push(a.name));
   headers.push('出席率', '繳交率', '平均分數');
   csv += headers.join(',') + '\n';
-  state.students.forEach(s => {
+  
+  getSortedStudents().forEach(s => {
     const grp = state.groups.find(g => g.id === s.groupId);
     let row = [`"${s.seatNo}"`, `"${s.name}"`, `"${grp ? grp.name : '未分組'}"`];
     let sub = 0;
