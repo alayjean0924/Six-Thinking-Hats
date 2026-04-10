@@ -767,18 +767,55 @@ function load() {
             } catch(e) {}
           }
           
-          if (!hasLocalData) {
-            alert('⚠️ 系統找不到您的原本資料設定！\n\n您可能正在使用 LINE 內建瀏覽器，導致讀取不到正確的作業名稱（呈現舊版或空白資料）。\n\n【重要解決方案】\n請將此頁面的網址「複製」，然後「貼上」到您平常管理系統的預設瀏覽器（如 Safari 或 Chrome）中開啟，才能正確合併小老師的資料！');
-            return;
-          }
-          
           // 防呆設定：確保所有屬性存在
           if(!state.scores) state.scores = {};
           if(!state.adjustments) state.adjustments = {};
           if(!state.records) state.records = {};
           if(!state.attendanceDates) state.attendanceDates = [];
           if(!state.attendanceRecords) state.attendanceRecords = {};
-          
+          if(!state.assignments) state.assignments = [];
+          if(!state.students) state.students = [];
+          if(!state.groups) state.groups = [];
+
+          // 核心修正：將小老師端的作業名稱、學生名單、組別同步覆寫老師端（解決舊作業名稱顯示問題）
+          if (urlData.assignments) {
+            urlData.assignments.forEach(ua => {
+              const existing = state.assignments.find(sa => sa.id === ua.id);
+              if (existing) {
+                existing.name = ua.name;
+                existing.mode = ua.mode;
+                existing.maxScore = ua.maxScore;
+                existing.scoreMode = ua.scoreMode;
+              } else {
+                state.assignments.push(ua);
+              }
+            });
+          }
+          if (urlData.students) {
+            urlData.students.forEach(us => {
+              const existing = state.students.find(ss => ss.id === us.id);
+              if (existing) {
+                existing.name = us.name;
+                existing.seatNo = us.seatNo;
+                existing.groupId = us.groupId;
+              } else {
+                state.students.push(us);
+              }
+            });
+          }
+          if (urlData.groups) {
+            urlData.groups.forEach(ug => {
+              const existing = state.groups.find(sg => sg.id === ug.id);
+              if (existing) {
+                existing.name = ug.name;
+                existing.label = ug.label;
+                existing.color = ug.color;
+              } else {
+                state.groups.push(ug);
+              }
+            });
+          }
+
           // 深度合併 (Deep Merge) records - 避免覆蓋老師端其他作業的資料
           if (urlData.records) {
             for (let aId in urlData.records) {
@@ -807,9 +844,33 @@ function load() {
               }
             });
           }
+
+          // 合併評分
+          if (urlData.scores) {
+            for (let aId in urlData.scores) {
+              if (!state.scores[aId]) state.scores[aId] = {};
+              for (let eId in urlData.scores[aId]) {
+                state.scores[aId][eId] = urlData.scores[aId][eId];
+              }
+            }
+          }
+          if (urlData.adjustments) {
+            for (let aId in urlData.adjustments) {
+              if (!state.adjustments[aId]) state.adjustments[aId] = {};
+              for (let eId in urlData.adjustments[aId]) {
+                state.adjustments[aId][eId] = urlData.adjustments[aId][eId];
+              }
+            }
+          }
           
           save();
-          alert('✅ 小老師的登記資料已成功同步到系統！');
+
+          if (!hasLocalData) {
+             alert('✅ 已成功讀取小老師回傳資料！\n\n⚠️ 偵測到您可能正使用 LINE 內建瀏覽器，這會導致資料無法合併至您平常用 Safari/Chrome 建立的主紀錄。\n\n【建議】請點擊右上角「以預設瀏覽器開啟」，或複製網址後貼至 Safari 或 Chrome 開啟，以確保資料完整保留。');
+          } else {
+             alert('✅ 小老師的登記資料已成功同步到系統！');
+          }
+          
           window.location.href = window.location.href.split('?')[0];
           return;
         } else {
@@ -1632,11 +1693,8 @@ function copyTaLink() {
 }
 
 function generateSyncLink() {
-  const exportData = { 
-    records: state.records, 
-    attendanceRecords: state.attendanceRecords,
-    attendanceDates: state.attendanceDates
-  };
+  // 核心修正：將所有資料（包含最新的作業與名單設定）整包回傳，確保老師點開後能全面覆寫舊記憶體
+  const exportData = state; 
   const b64Data = compressData(exportData);
   const link = `${window.location.href.split('?')[0].split('#')[0]}?mode=sync#data=${b64Data}`;
   
