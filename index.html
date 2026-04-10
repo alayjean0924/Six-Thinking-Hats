@@ -221,12 +221,9 @@
   .badge-gray { background: var(--surface3); color: var(--text2); }
 
   /* ─── TABLE ─── */
-  .table-wrap { overflow: auto; max-height: calc(100vh - 230px); border-radius: var(--radius); border: 1px solid var(--border); }
-  table { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 13px; }
+  .table-wrap { overflow-x: auto; border-radius: var(--radius); border: 1px solid var(--border); }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
   th {
-    position: sticky;
-    top: 0;
-    z-index: 10;
     background: var(--surface2);
     padding: 10px 14px;
     text-align: left;
@@ -234,7 +231,7 @@
     font-size: 12px;
     color: var(--text2);
     white-space: nowrap;
-    box-shadow: inset 0 -1px 0 var(--border); /* 取代 border-bottom，避免 sticky 邊框顯示異常 */
+    border-bottom: 1px solid var(--border);
   }
   td {
     padding: 9px 14px;
@@ -250,27 +247,26 @@
   .sticky-col-3 { position: sticky; left: 140px; z-index: 2; width: 100px; min-width: 100px; max-width: 100px; box-sizing: border-box; }
   .sticky-col-grp { position: sticky; left: 0; z-index: 2; width: 120px; min-width: 120px; max-width: 120px; box-sizing: border-box; }
   .sticky-col-members { position: sticky; left: 120px; z-index: 2; width: 180px; min-width: 180px; max-width: 180px; box-sizing: border-box; }
-  
-  /* 角落標題 (交會處)：同時擁有上下及左右凍結屬性，給予最高 z-index 避免被遮擋 */
-  th.sticky-col-1, th.sticky-col-2, th.sticky-col-3, th.sticky-col-grp, th.sticky-col-members {
-    z-index: 20 !important;
-  }
-
   .sticky-shadow::after {
     content: ''; position: absolute; top: 0; bottom: 0; right: 0; width: 6px; transform: translateX(100%);
     box-shadow: inset 6px 0 6px -6px rgba(0,0,0,0.5); pointer-events: none;
   }
 
   /* Sticky Backgrounds for Display Table */
-  .display-table th.sticky-col-1, .display-table th.sticky-col-2, .display-table th.sticky-col-3, .display-table th.sticky-col-grp, .display-table th.sticky-col-members { background: var(--surface); }
+  .display-table th.sticky-col-1, .display-table th.sticky-col-2, .display-table th.sticky-col-3, .display-table th.sticky-col-grp, .display-table th.sticky-col-members { background: var(--surface); z-index: 3; }
   .display-table td.sticky-col-1, .display-table td.sticky-col-2, .display-table td.sticky-col-3, .display-table td.sticky-col-grp, .display-table td.sticky-col-members { background: var(--bg); }
   .panel .display-table td.sticky-col-1, .panel .display-table td.sticky-col-2, .panel .display-table td.sticky-col-3, .panel .display-table td.sticky-col-grp, .panel .display-table td.sticky-col-members { background: var(--surface); }
   .display-table tr:hover td.sticky-col-1, .display-table tr:hover td.sticky-col-2, .display-table tr:hover td.sticky-col-3, .display-table tr:hover td.sticky-col-grp, .display-table tr:hover td.sticky-col-members { background: rgba(255,255,255,0.05); }
 
-  /* Sticky Backgrounds for All Internal Tables (.table-wrap) */
-  .table-wrap th.sticky-col-1, .table-wrap th.sticky-col-2, .table-wrap th.sticky-col-3, .table-wrap th.sticky-col-grp, .table-wrap th.sticky-col-members { background: var(--surface2); }
-  .table-wrap td.sticky-col-1, .table-wrap td.sticky-col-2, .table-wrap td.sticky-col-3, .table-wrap td.sticky-col-grp, .table-wrap td.sticky-col-members { background: var(--surface); }
-  .table-wrap tr:hover td.sticky-col-1, .table-wrap tr:hover td.sticky-col-2, .table-wrap tr:hover td.sticky-col-3, .table-wrap tr:hover td.sticky-col-grp, .table-wrap tr:hover td.sticky-col-members { background: rgba(255,255,255,0.05); }
+  /* Sticky Backgrounds for Records Table & Attendance Table */
+  #recordsTable th.sticky-col-1, #recordsTable th.sticky-col-2, #recordsTable th.sticky-col-3, #recordsTable th.sticky-col-grp, #recordsTable th.sticky-col-members,
+  #attendanceTable th.sticky-col-1, #attendanceTable th.sticky-col-2 { background: var(--surface2); z-index: 3; }
+  
+  #recordsTable td.sticky-col-1, #recordsTable td.sticky-col-2, #recordsTable td.sticky-col-3, #recordsTable td.sticky-col-grp, #recordsTable td.sticky-col-members,
+  #attendanceTable td.sticky-col-1, #attendanceTable td.sticky-col-2 { background: var(--surface); }
+  
+  #recordsTable tr:hover td.sticky-col-1, #recordsTable tr:hover td.sticky-col-2, #recordsTable tr:hover td.sticky-col-3, #recordsTable tr:hover td.sticky-col-grp, #recordsTable tr:hover td.sticky-col-members,
+  #attendanceTable tr:hover td.sticky-col-1, #attendanceTable tr:hover td.sticky-col-2 { background: rgba(255,255,255,0.05); }
 
   /* ─── CHECKBOX ─── */
   .check-cell { text-align: center; }
@@ -389,13 +385,9 @@
   .display-header p { color: var(--text2); margin-top: 6px; font-size: 14px; }
   .display-hats { display: flex; gap: 8px; justify-content: center; margin: 16px 0; }
   .display-hat { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; }
-  .display-table-wrap { overflow: auto; max-height: calc(100vh - 200px); border-radius: 14px; border: 1px solid var(--border); }
-  .display-table { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 13.5px; }
-  .display-table th { 
-    position: sticky; top: 0; z-index: 10;
-    padding: 12px 18px; background: var(--surface); font-size: 12px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.06em; 
-    box-shadow: inset 0 -1px 0 var(--border);
-  }
+  .display-table-wrap { overflow-x: auto; border-radius: 14px; border: 1px solid var(--border); }
+  .display-table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  .display-table th { padding: 12px 18px; background: var(--surface); font-size: 12px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1px solid var(--border); }
   .display-table td { padding: 11px 18px; border-bottom: 1px solid var(--border2); }
   .display-table tr:hover td { background: rgba(255,255,255,0.02); }
   
@@ -1393,14 +1385,14 @@ function renderScores() {
       <div class="panel-title"><span>G</span> 小組分數</div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th class="sticky-col-grp">組別</th><th class="sticky-col-members sticky-shadow">成員</th><th>組別分數 (/ ${assign.maxScore})</th><th>個別加扣分</th><th>操作</th></tr></thead>
+          <thead><tr><th>組別</th><th>成員</th><th>組別分數 (/ ${assign.maxScore})</th><th>個別加扣分</th><th>操作</th></tr></thead>
           <tbody>
             ${state.groups.map(g => {
               const members = getSortedStudents().filter(s => s.groupId === g.id);
               const score = state.scores[assignId][g.id] ?? '';
               return `<tr>
-                <td class="sticky-col-grp"><span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:8px;height:8px;border-radius:50%;background:${g.color}"></span>${g.name}</span></td>
-                <td class="sticky-col-members sticky-shadow"><div style="display:flex;flex-wrap:wrap;gap:3px;">${members.map(s=>`<span class="badge badge-gray">${s.seatNo} ${s.name}</span>`).join('')}</div></td>
+                <td><span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:8px;height:8px;border-radius:50%;background:${g.color}"></span>${g.name}</span></td>
+                <td><div style="display:flex;flex-wrap:wrap;gap:3px;">${members.map(s=>`<span class="badge badge-gray">${s.seatNo} ${s.name}</span>`).join('')}</div></td>
                 <td><input type="number" class="score-input" value="${score}" min="0" max="${assign.maxScore}" placeholder="--" onchange="setGroupScore('${assignId}','${g.id}',this.value,${assign.maxScore})"></td>
                 <td>${members.map(s => { const adj = state.adjustments[assignId][s.id] ?? 0; return `<span style="font-size:12px;margin-right:6px;">${s.seatNo}: <span style="color:${adj>0?'var(--success)':adj<0?'var(--danger)':'var(--text2)'}">${adj>0?'+':''}${adj}</span></span>`; }).join('')}</td>
                 <td><button class="btn btn-secondary btn-xs" onclick="openAdj('${assignId}','${g.id}')">個別加扣分</button></td>
@@ -1415,15 +1407,15 @@ function renderScores() {
       <div class="panel-title"><span>S</span> 個人分數</div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th class="sticky-col-1">座號</th><th class="sticky-col-2">姓名</th><th class="sticky-col-3 sticky-shadow">組別</th><th>分數 (/ ${assign.maxScore})</th></tr></thead>
+          <thead><tr><th>座號</th><th>姓名</th><th>組別</th><th>分數 (/ ${assign.maxScore})</th></tr></thead>
           <tbody>
             ${getSortedStudents().map(s => {
               const grp = state.groups.find(g => g.id === s.groupId);
               const score = state.scores[assignId][s.id] ?? '';
               return `<tr>
-                <td class="sticky-col-1"><span class="badge badge-gray">${s.seatNo}</span></td>
-                <td class="sticky-col-2">${s.name}</td>
-                <td class="sticky-col-3 sticky-shadow">${grp ? `<span style="font-size:12px;">${grp.name}</span>` : '<span class="text-xs">未分組</span>'}</td>
+                <td><span class="badge badge-gray">${s.seatNo}</span></td>
+                <td>${s.name}</td>
+                <td>${grp ? `<span style="font-size:12px;">${grp.name}</span>` : '<span class="text-xs">未分組</span>'}</td>
                 <td><input type="number" class="score-input" value="${score}" min="0" max="${assign.maxScore}" placeholder="--" onchange="setIndivScore('${assignId}','${s.id}',this.value,${assign.maxScore})"></td>
               </tr>`;
             }).join('')}
@@ -1833,4 +1825,20 @@ function exportExcel() {
 // ══════════════════════════════════════════════════════════
 if (isStudentMode) {
   document.body.classList.add('student-mode');
-  const
+  const closeBtn = document.getElementById('closeDisplayBtn');
+  if (closeBtn) closeBtn.style.display = 'none';
+  document.getElementById('displayPage').classList.add('open');
+  renderDisplay();
+} else if (isTaMode) {
+  updateAllDropdowns();
+  renderRecords();
+  document.querySelector('[data-page="records"]').classList.add('active');
+  document.getElementById('page-records').style.display = 'block';
+} else if (appMode !== 'sync') {
+  renderStudentTable();
+  renderAssignmentList();
+  updateAllDropdowns();
+}
+</script>
+</body>
+</html>
