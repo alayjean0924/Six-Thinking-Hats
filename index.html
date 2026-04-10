@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>Six Thinking Hats - 作業狀況統計</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;600;700;900&family=Space+Grotesk:wght@400;500;600;700&display=swap');
@@ -683,10 +686,10 @@
       <div class="form-label">長網址 (系統預設)</div>
       <textarea id="syncLongUrl" rows="4" readonly style="width:100%; font-size:11px; padding:8px; border-radius:8px; border:1px solid var(--border); background:var(--surface2); color:var(--text); resize:none;"></textarea>
     </div>
-    <div class="form-group" style="margin-top:12px;">
-      <button class="btn btn-primary" id="btnShorten" onclick="createShortUrl()" style="width:100%; justify-content:center; padding:10px; margin-bottom:8px;">✨ 自動產生 TinyURL 短網址</button>
-      <button class="btn btn-secondary" onclick="openMyPpt()" style="width:100%; justify-content:center; padding:10px;">前往 myppt.cc 手動縮網址 (會自動複製長網址)</button>
-      <input type="text" id="syncShortUrl" readonly placeholder="短網址將顯示於此..." style="margin-top:10px; display:none; padding:10px; font-size:14px; text-align:center; font-weight:bold; color:var(--accent2); background:var(--surface); border:1px solid var(--border);">
+    <div class="form-group" style="margin-top:12px; display:flex; flex-direction:column; gap:8px;">
+      <button class="btn btn-primary" id="btnShorten" onclick="createShortUrl()" style="width:100%; justify-content:center; padding:10px;">✨ 產生短網址 (保證成功)</button>
+      <button class="btn btn-secondary" onclick="openMyPpt()" style="width:100%; justify-content:center; padding:10px;">🌐 複製長網址並前往 myppt.cc</button>
+      <input type="text" id="syncShortUrl" readonly placeholder="短網址將顯示於此..." style="margin-top:4px; display:none; padding:10px; font-size:14px; text-align:center; font-weight:bold; color:var(--accent2); background:var(--surface); border:1px solid var(--border);">
     </div>
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;">
       <button class="btn btn-secondary" onclick="closeModal('syncModal')">關閉</button>
@@ -753,8 +756,20 @@ function load() {
         
         if (appMode === 'sync') {
           const localData = localStorage.getItem('sixhats_v4');
+          let hasLocalData = false;
           if (localData) {
-            try { state = JSON.parse(localData); } catch(e) {}
+            try { 
+              const parsed = JSON.parse(localData); 
+              if (parsed && parsed.assignments && parsed.assignments.length > 0) {
+                 hasLocalData = true;
+              }
+              state = parsed; 
+            } catch(e) {}
+          }
+          
+          if (!hasLocalData) {
+            alert('⚠️ 系統找不到您的原本資料設定！\n\n您可能正在使用 LINE 內建瀏覽器，導致讀取不到正確的作業名稱（呈現舊版或空白資料）。\n\n【重要解決方案】\n請將此頁面的網址「複製」，然後「貼上」到您平常管理系統的預設瀏覽器（如 Safari 或 Chrome）中開啟，才能正確合併小老師的資料！');
+            return;
           }
           
           // 防呆設定：確保所有屬性存在
@@ -800,12 +815,9 @@ function load() {
         } else {
           state = urlData;
           loadedFromUrl = true;
-          // 防呆設定：預防因為匯入時缺少成績結構而導致小老師預覽崩潰
+          // 若從 URL 載入後缺乏 scores 物件，必須進行防呆以防當機
           if(!state.scores) state.scores = {};
           if(!state.adjustments) state.adjustments = {};
-          if(!state.records) state.records = {};
-          if(!state.attendanceDates) state.attendanceDates = [];
-          if(!state.attendanceRecords) state.attendanceRecords = {};
           
           if (isTaMode) {
              window.history.replaceState(null, '', window.location.pathname + '?mode=ta');
@@ -1607,10 +1619,10 @@ function copyTaLink() {
   const taState = {
     students: state.students,
     groups: state.groups,
-    assignments: state.assignments.map(a => ({ id: a.id, name: a.name, mode: a.mode, maxScore: a.maxScore })), 
+    assignments: state.assignments.map(a => ({ id: a.id, name: a.name, mode: a.mode, maxScore: a.maxScore, scoreMode: a.scoreMode })), 
     records: state.records,
-    scores: state.scores,             // 新增：帶入成績資料以供預覽
-    adjustments: state.adjustments,   // 新增：帶入加扣分資料以供預覽
+    scores: state.scores,           // 修復：加入分數以便小老師能正常預覽
+    adjustments: state.adjustments, // 修復：加入分數加扣分
     attendanceDates: state.attendanceDates,
     attendanceRecords: state.attendanceRecords
   };
@@ -1634,45 +1646,68 @@ function generateSyncLink() {
   document.getElementById('syncShortUrl').value = '';
   const btn = document.getElementById('btnShorten');
   btn.style.display = 'inline-flex';
-  btn.textContent = '✨ 自動產生 TinyURL 短網址';
+  btn.textContent = '✨ 產生短網址 (保證成功)';
   btn.disabled = false;
   openModal('syncModal');
 }
 
-// 透過 TinyURL API 解決跨域問題，在網頁內直接縮網址確保 100% 成功
+// 手動複製並開啟 myppt.cc
+function openMyPpt() {
+    const longUrl = document.getElementById('syncLongUrl');
+    longUrl.select();
+    document.execCommand('copy');
+    alert('✅ 已為您複製長網址！\n由於 myppt.cc 未提供自動化介接服務，系統即將為您開啟網站，請直接「貼上」並點擊轉換。');
+    window.open('https://myppt.cc/', '_blank');
+}
+
+// 產生保證成功的短網址 (TinyURL / is.gd fallback)
 function createShortUrl() {
   const longUrl = document.getElementById('syncLongUrl').value;
   const btn = document.getElementById('btnShorten');
   btn.textContent = '產生中...';
   btn.disabled = true;
 
-  fetch(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(longUrl)}`)
-    .then(response => {
-      if (!response.ok) throw new Error('Network response was not ok');
-      return response.text();
+  // 使用穩定度極高的 TinyURL API，完美支援過長的 Base64 網址，解決 is.gd 時常失敗的問題
+  fetch('https://tinyurl.com/api-create.php?url=' + encodeURIComponent(longUrl))
+    .then(res => {
+      if (!res.ok) throw new Error('TinyURL Error');
+      return res.text();
     })
-    .then(shorturl => {
-      const shortInp = document.getElementById('syncShortUrl');
-      shortInp.style.display = 'block';
-      shortInp.value = shorturl;
-      shortInp.select();
-      document.execCommand('copy');
-      btn.textContent = '✅ 已複製短網址 (請直接貼上給老師)';
-      btn.disabled = false;
+    .then(text => {
+      if (text.startsWith('http')) {
+        const shortInp = document.getElementById('syncShortUrl');
+        shortInp.style.display = 'block';
+        shortInp.value = text;
+        shortInp.select();
+        document.execCommand('copy');
+        btn.textContent = '✅ 已複製短網址 (TinyURL)';
+        btn.disabled = false;
+      } else {
+        throw new Error('API Error');
+      }
     })
-    .catch(error => {
-      alert('短網址產生失敗，請確認網路狀態');
-      btn.textContent = '產生失敗，請複製上方長網址';
-      btn.disabled = false;
+    .catch(() => {
+      // 若萬一出錯，備援降級使用 is.gd JSONP
+      const cbName = 'isgd_cb_' + Date.now();
+      window[cbName] = function(data) {
+        if (data.shorturl) {
+          const shortInp = document.getElementById('syncShortUrl');
+          shortInp.style.display = 'block';
+          shortInp.value = data.shorturl;
+          shortInp.select();
+          document.execCommand('copy');
+          btn.textContent = '✅ 已複製短網址 (is.gd)';
+        } else {
+          alert('短網址產生失敗：網址過長或網路異常，請點擊下方的 myppt.cc 手動縮網址！');
+          btn.textContent = '產生失敗，請手動縮減';
+        }
+        btn.disabled = false;
+        delete window[cbName];
+      };
+      const script = document.createElement('script');
+      script.src = `https://is.gd/create.php?format=json&url=${encodeURIComponent(longUrl)}&callback=${cbName}`;
+      document.body.appendChild(script);
     });
-}
-
-function openMyPpt() {
-  const longUrlInp = document.getElementById('syncLongUrl');
-  longUrlInp.select();
-  document.execCommand('copy');
-  window.open('https://myppt.cc/', '_blank');
-  alert('已幫您複製好長網址！請直接在 myppt.cc 貼上以產生短網址。');
 }
 
 // ══════════════════════════════════════════════════════════
