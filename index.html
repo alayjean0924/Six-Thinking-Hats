@@ -241,6 +241,27 @@
   tr:last-child td { border-bottom: none; }
   tr:hover td { background: rgba(255,255,255,0.02); }
 
+  /* ─── STICKY COLUMNS (FREEZE PANES) ─── */
+  .sticky-col-1 { position: sticky; left: 0; z-index: 2; width: 60px; min-width: 60px; max-width: 60px; box-sizing: border-box; }
+  .sticky-col-2 { position: sticky; left: 60px; z-index: 2; width: 80px; min-width: 80px; max-width: 80px; box-sizing: border-box; }
+  .sticky-col-grp { position: sticky; left: 0; z-index: 2; width: 120px; min-width: 120px; max-width: 120px; box-sizing: border-box; }
+  .sticky-shadow::after {
+    content: ''; position: absolute; top: 0; bottom: 0; right: 0; width: 6px; transform: translateX(100%);
+    box-shadow: inset 6px 0 6px -6px rgba(0,0,0,0.5); pointer-events: none;
+  }
+
+  /* Sticky Backgrounds for Display Table */
+  .display-table th.sticky-col-1, .display-table th.sticky-col-2 { background: var(--surface); z-index: 3; }
+  .display-table td.sticky-col-1, .display-table td.sticky-col-2 { background: var(--bg); }
+  .panel .display-table td.sticky-col-1, .panel .display-table td.sticky-col-2 { background: var(--surface); }
+  .display-table tr:hover td.sticky-col-1, .display-table tr:hover td.sticky-col-2 { background: rgba(255,255,255,0.05); }
+
+  /* Sticky Backgrounds for Records Table */
+  #recordsTable th.sticky-col-1, #recordsTable th.sticky-col-2, #recordsTable th.sticky-col-grp { background: var(--surface2); z-index: 3; }
+  #recordsTable td.sticky-col-1, #recordsTable td.sticky-col-2, #recordsTable td.sticky-col-grp { background: var(--surface); }
+  #recordsTable tr:hover td.sticky-col-1, #recordsTable tr:hover td.sticky-col-2, #recordsTable tr:hover td.sticky-col-grp { background: rgba(255,255,255,0.05); }
+
+
   /* ─── CHECKBOX ─── */
   .check-cell { text-align: center; }
   .check-box {
@@ -679,20 +700,18 @@
   </div>
 </div>
 
-<div class="modal-overlay" id="syncModal">
+<div class="modal-overlay" id="linkModal">
   <div class="modal">
-    <div class="modal-title">📤 產生回傳同步連結</div>
+    <div class="modal-title" id="linkModalTitle">產生連結</div>
     <div class="form-group">
       <div class="form-label">長網址 (系統預設)</div>
-      <textarea id="syncLongUrl" rows="4" readonly style="width:100%; font-size:11px; padding:8px; border-radius:8px; border:1px solid var(--border); background:var(--surface2); color:var(--text); resize:none;"></textarea>
+      <textarea id="linkLongUrl" rows="4" readonly style="width:100%; font-size:11px; padding:8px; border-radius:8px; border:1px solid var(--border); background:var(--surface2); color:var(--text); resize:none;"></textarea>
     </div>
     <div class="form-group" style="margin-top:12px; display:flex; flex-direction:column; gap:8px;">
-      <button class="btn btn-primary" id="btnShorten" onclick="createShortUrl()" style="width:100%; justify-content:center; padding:10px;">✨ 產生短網址 (保證成功)</button>
-      <button class="btn btn-secondary" onclick="openMyPpt()" style="width:100%; justify-content:center; padding:10px;">🌐 複製長網址並前往 myppt.cc</button>
-      <input type="text" id="syncShortUrl" readonly placeholder="短網址將顯示於此..." style="margin-top:4px; display:none; padding:10px; font-size:14px; text-align:center; font-weight:bold; color:var(--accent2); background:var(--surface); border:1px solid var(--border);">
+      <button class="btn btn-primary" onclick="openMyPpt()" style="width:100%; justify-content:center; padding:10px;">🌐 複製長網址並前往 myppt.cc</button>
     </div>
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;">
-      <button class="btn btn-secondary" onclick="closeModal('syncModal')">關閉</button>
+      <button class="btn btn-secondary" onclick="closeModal('linkModal')">關閉</button>
     </div>
   </div>
 </div>
@@ -1182,7 +1201,7 @@ function renderRecords() {
   }
   
   if (recordView === 'individual') {
-    thead.innerHTML = '<th>座號</th><th>姓名</th><th>組別</th>' + assigns.map(a => `<th style="text-align:center;white-space:nowrap;">${a.name}<br><span style="font-size:10px;color:var(--text3);font-weight:400;">${a.mode==='group'?'小組':'個人'}</span></th>`).join('') + '<th>繳交率</th>';
+    thead.innerHTML = '<th class="sticky-col-1">座號</th><th class="sticky-col-2 sticky-shadow">姓名</th><th>組別</th>' + assigns.map(a => `<th style="text-align:center;white-space:nowrap;">${a.name}<br><span style="font-size:10px;color:var(--text3);font-weight:400;">${a.mode==='group'?'小組':'個人'}</span></th>`).join('') + '<th>繳交率</th>';
     // 確保留在個人模式時，依舊為座號排序
     tbody.innerHTML = getSortedStudents().map(s => {
       const grp = state.groups.find(g => g.id === s.groupId);
@@ -1197,8 +1216,8 @@ function renderRecords() {
       const pct = assigns.length ? Math.round(submitted / assigns.length * 100) : 0;
       const barColor = pct >= 80 ? 'var(--success)' : pct >= 50 ? 'var(--warning)' : 'var(--danger)';
       return `<tr>
-        <td><span class="badge badge-gray">${s.seatNo}</span></td>
-        <td>${s.name}</td>
+        <td class="sticky-col-1"><span class="badge badge-gray">${s.seatNo}</span></td>
+        <td class="sticky-col-2 sticky-shadow">${s.name}</td>
         <td>${grp ? `<span style="display:inline-flex;align-items:center;gap:5px;"><span style="width:8px;height:8px;border-radius:50%;background:${grp.color};"></span><span style="font-size:12px;">${grp.name}</span></span>` : '<span class="text-xs">未分組</span>'}</td>
         ${cells}
         <td><div style="display:flex;align-items:center;gap:6px;"><div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%;background:${barColor};"></div></div><span style="font-size:11px;color:var(--text2);">${pct}%</span></div></td>
@@ -1206,7 +1225,7 @@ function renderRecords() {
     }).join('');
   } else {
     if (!state.groups.length) { tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--text3);padding:24px;">尚未建立組別</td></tr>'; return; }
-    thead.innerHTML = '<th>組別</th><th>成員</th>' + assigns.map(a => `<th style="text-align:center;">${a.name}</th>`).join('') + '<th>繳交率</th>';
+    thead.innerHTML = '<th class="sticky-col-grp sticky-shadow">組別</th><th>成員</th>' + assigns.map(a => `<th style="text-align:center;">${a.name}</th>`).join('') + '<th>繳交率</th>';
     tbody.innerHTML = state.groups.map(g => {
       // 在小組名單內部的成員也依照座號排序
       const members = getSortedStudents().filter(s => s.groupId === g.id);
@@ -1219,7 +1238,7 @@ function renderRecords() {
       const pct = assigns.length ? Math.round(submitted / assigns.length * 100) : 0;
       const barColor = pct >= 80 ? 'var(--success)' : pct >= 50 ? 'var(--warning)' : 'var(--danger)';
       return `<tr>
-        <td><span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:10px;height:10px;border-radius:50%;background:${g.color}"></span><strong>${g.name}</strong></span></td>
+        <td class="sticky-col-grp sticky-shadow"><span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:10px;height:10px;border-radius:50%;background:${g.color}"></span><strong>${g.name}</strong></span></td>
         <td><div style="display:flex;flex-wrap:wrap;gap:4px;">${members.map(s=>`<span class="badge badge-gray">${s.seatNo}</span>`).join('')}</div></td>
         ${cells}
         <td><div style="display:flex;align-items:center;gap:6px;"><div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%;background:${barColor};"></div></div><span style="font-size:11px;color:var(--text2);">${pct}%</span></div></td>
@@ -1573,7 +1592,7 @@ function renderDisplay() {
     c.innerHTML = `<div class="display-table-wrap">
       <table class="display-table">
         <thead><tr>
-          <th>座號</th><th>姓名</th><th>組別</th>
+          <th class="sticky-col-1">座號</th><th class="sticky-col-2 sticky-shadow">姓名</th><th>組別</th>
           ${state.assignments.map(a => `<th style="text-align:center;">${a.name}</th>`).join('')}
           ${hasAttendance ? '<th>出席率</th>' : ''}
           <th>繳交率</th><th>平均分數</th>
@@ -1603,8 +1622,8 @@ function renderDisplay() {
             }
             
             return `<tr>
-              <td><strong>${s.seatNo}</strong></td>
-              <td>${s.name}</td>
+              <td class="sticky-col-1"><strong>${s.seatNo}</strong></td>
+              <td class="sticky-col-2 sticky-shadow">${s.name}</td>
               <td>${grp ? `<span style="display:inline-flex;align-items:center;gap:5px;"><span style="width:8px;height:8px;border-radius:50%;background:${grp.color}"></span>${grp.name}</span>` : '<span style="color:var(--text3);font-size:12px;">未分組</span>'}</td>
               ${cells}
               ${attCell}
@@ -1624,7 +1643,7 @@ function renderDisplay() {
         <div class="display-table-wrap">
           <table class="display-table">
             <thead><tr>
-              <th>座號</th><th>姓名</th>
+              <th class="sticky-col-1">座號</th><th class="sticky-col-2 sticky-shadow">姓名</th>
               ${state.assignments.map(a => `<th style="text-align:center;">${a.name}</th>`).join('')}
               ${hasAttendance ? '<th>出席率</th>' : ''}
               <th>繳交率</th><th>平均分數</th>
@@ -1653,7 +1672,7 @@ function renderDisplay() {
                 }
 
                 return `<tr>
-                  <td><strong>${s.seatNo}</strong></td><td>${s.name}</td>
+                  <td class="sticky-col-1"><strong>${s.seatNo}</strong></td><td class="sticky-col-2 sticky-shadow">${s.name}</td>
                   ${cells} ${attCell}
                   <td><span style="font-weight:700;color:${pctColor}">${pct}%</span></td>
                   <td><span style="font-weight:600;">${avg}</span></td>
@@ -1670,10 +1689,24 @@ function renderDisplay() {
 // ══════════════════════════════════════════════════════════
 //  LINKS & SHORT URL (Student, TA, Sync)
 // ══════════════════════════════════════════════════════════
+function showLinkModal(title, url) {
+  document.getElementById('linkModalTitle').textContent = title;
+  document.getElementById('linkLongUrl').value = url;
+  openModal('linkModal');
+}
+
+function openMyPpt() {
+    const longUrl = document.getElementById('linkLongUrl');
+    longUrl.select();
+    document.execCommand('copy');
+    alert('✅ 已為您複製長網址！\n由於 myppt.cc 未提供自動化介接服務，系統即將為您開啟網站，請直接「貼上」並點擊轉換。');
+    window.open('https://myppt.cc/', '_blank');
+}
+
 function copyStudentLink() {
   const b64Data = compressData(state);
   const link = `${window.location.href.split('?')[0].split('#')[0]}?mode=student#data=${b64Data}`;
-  navigator.clipboard.writeText(link).then(() => alert('✅ 已成功複製「學生專屬展示連結」！')).catch(() => prompt('請手動複製以下連結：', link));
+  showLinkModal('🔗 複製學生展示連結', link);
 }
 
 function copyTaLink() {
@@ -1689,7 +1722,7 @@ function copyTaLink() {
   };
   const b64Data = compressData(taState);
   const link = `${window.location.href.split('?')[0].split('#')[0]}?mode=ta#data=${b64Data}`;
-  navigator.clipboard.writeText(link).then(() => alert('✅ 已成功複製「小老師專屬連結」！')).catch(() => prompt('請手動複製連結：', link));
+  showLinkModal('👨‍🏫 複製小老師連結', link);
 }
 
 function generateSyncLink() {
@@ -1697,75 +1730,7 @@ function generateSyncLink() {
   const exportData = state; 
   const b64Data = compressData(exportData);
   const link = `${window.location.href.split('?')[0].split('#')[0]}?mode=sync#data=${b64Data}`;
-  
-  // 開啟有短網址功能的 Modal
-  document.getElementById('syncLongUrl').value = link;
-  document.getElementById('syncShortUrl').style.display = 'none';
-  document.getElementById('syncShortUrl').value = '';
-  const btn = document.getElementById('btnShorten');
-  btn.style.display = 'inline-flex';
-  btn.textContent = '✨ 產生短網址 (保證成功)';
-  btn.disabled = false;
-  openModal('syncModal');
-}
-
-// 手動複製並開啟 myppt.cc
-function openMyPpt() {
-    const longUrl = document.getElementById('syncLongUrl');
-    longUrl.select();
-    document.execCommand('copy');
-    alert('✅ 已為您複製長網址！\n由於 myppt.cc 未提供自動化介接服務，系統即將為您開啟網站，請直接「貼上」並點擊轉換。');
-    window.open('https://myppt.cc/', '_blank');
-}
-
-// 產生保證成功的短網址 (TinyURL / is.gd fallback)
-function createShortUrl() {
-  const longUrl = document.getElementById('syncLongUrl').value;
-  const btn = document.getElementById('btnShorten');
-  btn.textContent = '產生中...';
-  btn.disabled = true;
-
-  // 使用穩定度極高的 TinyURL API，完美支援過長的 Base64 網址，解決 is.gd 時常失敗的問題
-  fetch('https://tinyurl.com/api-create.php?url=' + encodeURIComponent(longUrl))
-    .then(res => {
-      if (!res.ok) throw new Error('TinyURL Error');
-      return res.text();
-    })
-    .then(text => {
-      if (text.startsWith('http')) {
-        const shortInp = document.getElementById('syncShortUrl');
-        shortInp.style.display = 'block';
-        shortInp.value = text;
-        shortInp.select();
-        document.execCommand('copy');
-        btn.textContent = '✅ 已複製短網址 (TinyURL)';
-        btn.disabled = false;
-      } else {
-        throw new Error('API Error');
-      }
-    })
-    .catch(() => {
-      // 若萬一出錯，備援降級使用 is.gd JSONP
-      const cbName = 'isgd_cb_' + Date.now();
-      window[cbName] = function(data) {
-        if (data.shorturl) {
-          const shortInp = document.getElementById('syncShortUrl');
-          shortInp.style.display = 'block';
-          shortInp.value = data.shorturl;
-          shortInp.select();
-          document.execCommand('copy');
-          btn.textContent = '✅ 已複製短網址 (is.gd)';
-        } else {
-          alert('短網址產生失敗：網址過長或網路異常，請點擊下方的 myppt.cc 手動縮網址！');
-          btn.textContent = '產生失敗，請手動縮減';
-        }
-        btn.disabled = false;
-        delete window[cbName];
-      };
-      const script = document.createElement('script');
-      script.src = `https://is.gd/create.php?format=json&url=${encodeURIComponent(longUrl)}&callback=${cbName}`;
-      document.body.appendChild(script);
-    });
+  showLinkModal('📤 產生回傳同步連結', link);
 }
 
 // ══════════════════════════════════════════════════════════
