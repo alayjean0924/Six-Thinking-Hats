@@ -221,14 +221,12 @@
   .badge-gray { background: var(--surface3); color: var(--text2); }
 
   /* ─── TABLE ─── */
-  .table-wrap { 
-    overflow: auto; /* 允許垂直與水平滾動 */
-    max-height: calc(100vh - 230px); /* Excel 凍結窗格：設定最大高度讓表格內部自己滾動 */
-    border-radius: var(--radius); 
-    border: 1px solid var(--border); 
-  }
-  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  .table-wrap { overflow: auto; max-height: calc(100vh - 230px); border-radius: var(--radius); border: 1px solid var(--border); }
+  table { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 13px; }
   th {
+    position: sticky;
+    top: 0;
+    z-index: 10;
     background: var(--surface2);
     padding: 10px 14px;
     text-align: left;
@@ -236,10 +234,7 @@
     font-size: 12px;
     color: var(--text2);
     white-space: nowrap;
-    box-shadow: inset 0 -1px 0 var(--border); /* 使用陰影取代邊框，避免滾動破圖 */
-    position: sticky; /* Excel 凍結窗格：固定標題列 */
-    top: 0;
-    z-index: 10;
+    box-shadow: inset 0 -1px 0 var(--border); /* 取代 border-bottom，避免 sticky 邊框顯示異常 */
   }
   td {
     padding: 9px 14px;
@@ -255,37 +250,27 @@
   .sticky-col-3 { position: sticky; left: 140px; z-index: 2; width: 100px; min-width: 100px; max-width: 100px; box-sizing: border-box; }
   .sticky-col-grp { position: sticky; left: 0; z-index: 2; width: 120px; min-width: 120px; max-width: 120px; box-sizing: border-box; }
   .sticky-col-members { position: sticky; left: 120px; z-index: 2; width: 180px; min-width: 180px; max-width: 180px; box-sizing: border-box; }
+  
+  /* 角落標題 (交會處)：同時擁有上下及左右凍結屬性，給予最高 z-index 避免被遮擋 */
+  th.sticky-col-1, th.sticky-col-2, th.sticky-col-3, th.sticky-col-grp, th.sticky-col-members {
+    z-index: 20 !important;
+  }
+
   .sticky-shadow::after {
     content: ''; position: absolute; top: 0; bottom: 0; right: 0; width: 6px; transform: translateX(100%);
     box-shadow: inset 6px 0 6px -6px rgba(0,0,0,0.5); pointer-events: none;
   }
 
-  /* 針對所有一般表格的凍結列背景處理 */
-  table th.sticky-col-1, table th.sticky-col-2, table th.sticky-col-3, table th.sticky-col-grp, table th.sticky-col-members { 
-    background: var(--surface2); 
-    z-index: 12 !important; /* Excel 凍結窗格：左上角十字交集處需置於最上層 */
-  }
-  table td.sticky-col-1, table td.sticky-col-2, table td.sticky-col-3, table td.sticky-col-grp, table td.sticky-col-members { 
-    background: var(--surface); 
-  }
-  table tr:hover td.sticky-col-1, table tr:hover td.sticky-col-2, table tr:hover td.sticky-col-3, table tr:hover td.sticky-col-grp, table tr:hover td.sticky-col-members { 
-    background: rgba(255,255,255,0.05); 
-  }
+  /* Sticky Backgrounds for Display Table */
+  .display-table th.sticky-col-1, .display-table th.sticky-col-2, .display-table th.sticky-col-3, .display-table th.sticky-col-grp, .display-table th.sticky-col-members { background: var(--surface); }
+  .display-table td.sticky-col-1, .display-table td.sticky-col-2, .display-table td.sticky-col-3, .display-table td.sticky-col-grp, .display-table td.sticky-col-members { background: var(--bg); }
+  .panel .display-table td.sticky-col-1, .panel .display-table td.sticky-col-2, .panel .display-table td.sticky-col-3, .panel .display-table td.sticky-col-grp, .panel .display-table td.sticky-col-members { background: var(--surface); }
+  .display-table tr:hover td.sticky-col-1, .display-table tr:hover td.sticky-col-2, .display-table tr:hover td.sticky-col-3, .display-table tr:hover td.sticky-col-grp, .display-table tr:hover td.sticky-col-members { background: rgba(255,255,255,0.05); }
 
-  /* 針對學生展示用表格的獨立色彩覆寫 */
-  .display-table th.sticky-col-1, .display-table th.sticky-col-2, .display-table th.sticky-col-3, .display-table th.sticky-col-grp, .display-table th.sticky-col-members { 
-    background: var(--surface); 
-    z-index: 12 !important; 
-  }
-  .display-table td.sticky-col-1, .display-table td.sticky-col-2, .display-table td.sticky-col-3, .display-table td.sticky-col-grp, .display-table td.sticky-col-members { 
-    background: var(--bg); 
-  }
-  .panel .display-table td.sticky-col-1, .panel .display-table td.sticky-col-2, .panel .display-table td.sticky-col-3, .panel .display-table td.sticky-col-grp, .panel .display-table td.sticky-col-members { 
-    background: var(--surface); 
-  }
-  .display-table tr:hover td.sticky-col-1, .display-table tr:hover td.sticky-col-2, .display-table tr:hover td.sticky-col-3, .display-table tr:hover td.sticky-col-grp, .display-table tr:hover td.sticky-col-members { 
-    background: rgba(255,255,255,0.05); 
-  }
+  /* Sticky Backgrounds for All Internal Tables (.table-wrap) */
+  .table-wrap th.sticky-col-1, .table-wrap th.sticky-col-2, .table-wrap th.sticky-col-3, .table-wrap th.sticky-col-grp, .table-wrap th.sticky-col-members { background: var(--surface2); }
+  .table-wrap td.sticky-col-1, .table-wrap td.sticky-col-2, .table-wrap td.sticky-col-3, .table-wrap td.sticky-col-grp, .table-wrap td.sticky-col-members { background: var(--surface); }
+  .table-wrap tr:hover td.sticky-col-1, .table-wrap tr:hover td.sticky-col-2, .table-wrap tr:hover td.sticky-col-3, .table-wrap tr:hover td.sticky-col-grp, .table-wrap tr:hover td.sticky-col-members { background: rgba(255,255,255,0.05); }
 
   /* ─── CHECKBOX ─── */
   .check-cell { text-align: center; }
@@ -404,19 +389,12 @@
   .display-header p { color: var(--text2); margin-top: 6px; font-size: 14px; }
   .display-hats { display: flex; gap: 8px; justify-content: center; margin: 16px 0; }
   .display-hat { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; }
-  .display-table-wrap { overflow: auto; max-height: calc(100vh - 230px); border-radius: 14px; border: 1px solid var(--border); }
-  .display-table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  .display-table-wrap { overflow: auto; max-height: calc(100vh - 200px); border-radius: 14px; border: 1px solid var(--border); }
+  .display-table { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 13.5px; }
   .display-table th { 
-    padding: 12px 18px; 
-    background: var(--surface); 
-    font-size: 12px; 
-    color: var(--text2); 
-    text-transform: uppercase; 
-    letter-spacing: 0.06em; 
+    position: sticky; top: 0; z-index: 10;
+    padding: 12px 18px; background: var(--surface); font-size: 12px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.06em; 
     box-shadow: inset 0 -1px 0 var(--border);
-    position: sticky;
-    top: 0;
-    z-index: 10;
   }
   .display-table td { padding: 11px 18px; border-bottom: 1px solid var(--border2); }
   .display-table tr:hover td { background: rgba(255,255,255,0.02); }
@@ -534,7 +512,7 @@
         <div class="panel-title"><span>S</span> 學生名單 (<span id="studentCount">0</span>)</div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th class="sticky-col-1">座號</th><th class="sticky-col-2 sticky-shadow">姓名</th><th>組別</th><th>操作</th></tr></thead>
+            <thead><tr><th>座號</th><th>姓名</th><th>組別</th><th>操作</th></tr></thead>
             <tbody id="studentTable"></tbody>
           </table>
         </div>
@@ -1049,12 +1027,12 @@ function renderStudentTable() {
   if(!tbody) return;
   document.getElementById('studentCount').textContent = state.students.length;
   if (!state.students.length) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text3);padding:24px;">尚未新增學生</td></tr>'; return; }
-  // 使用強制的座號排序，並加入凍結列 class 以保持一致
+  // 使用強制的座號排序
   tbody.innerHTML = getSortedStudents().map(s => {
     const groupOpts = '<option value="">-- 未分組 --</option>' + state.groups.map(g => `<option value="${g.id}" ${s.groupId === g.id ? 'selected' : ''}>${g.name}</option>`).join('');
     return `<tr>
-      <td class="sticky-col-1"><span class="badge badge-gray">${s.seatNo}</span></td>
-      <td class="sticky-col-2 sticky-shadow">${s.name}</td>
+      <td><span class="badge badge-gray">${s.seatNo}</span></td>
+      <td>${s.name}</td>
       <td><select style="width:140px;padding:4px 8px;font-size:12px;" onchange="assignStudentGroup('${s.id}', this.value)">${groupOpts}</select></td>
       <td><button class="btn btn-danger btn-xs" onclick="removeStudent('${s.id}')">刪除</button></td>
     </tr>`;
@@ -1077,3 +1055,782 @@ function doBulkImport() {
       const p2 = parts[parts.length - 1];
       let name, seatNo;
       if (/^\d+$/.test(p1)) { seatNo = p1; name = p2; }
+      else if (/^\d+$/.test(p2)) { seatNo = p2; name = p1; }
+      else { seatNo = p1; name = p2; }
+
+      if (!state.students.find(s => s.seatNo === seatNo)) {
+        state.students.push({ id: uid(), name, seatNo, groupId: null });
+        added++;
+      }
+    }
+  });
+  state.students.sort((a,b) => a.seatNo.localeCompare(b.seatNo, undefined, {numeric:true}));
+  save(); closeModal('bulkModal'); renderStudentTable();
+  alert(`成功匯入 ${added} 位學生`);
+}
+
+// ══════════════════════════════════════════════════════════
+//  GROUPS
+// ══════════════════════════════════════════════════════════
+function addGroup() {
+  const name = document.getElementById('newGroupName').value.trim();
+  const label = document.getElementById('newGroupLabel').value.trim();
+  if (!name) { alert('請填入組別名稱'); return; }
+  const GROUP_COLORS = ['#ff5c5c', '#4a4a60', '#ffd166', '#06d6a0', '#118ab2', '#8b83ff'];
+  const color = GROUP_COLORS[state.groups.length % GROUP_COLORS.length];
+  state.groups.push({ id: uid(), name, label: label || name, color });
+  save();
+  document.getElementById('newGroupName').value = ''; document.getElementById('newGroupLabel').value = '';
+  renderGroupCards();
+}
+
+function removeGroup(id) {
+  if (!confirm('確定刪除此組別？學生將被移至未分組。')) return;
+  state.groups = state.groups.filter(g => g.id !== id);
+  state.students.forEach(s => { if (s.groupId === id) s.groupId = null; });
+  save(); renderGroupCards();
+}
+
+function renderGroupCards() {
+  const c = document.getElementById('groupCards');
+  if(!c) return;
+  if (!state.groups.length) { c.innerHTML = '<div style="color:var(--text3);font-size:13px;padding:12px 0;">尚未建立組別</div>'; return; }
+  c.innerHTML = state.groups.map(g => {
+    const members = getSortedStudents().filter(s => s.groupId === g.id);
+    return `<div class="panel" style="padding:16px;margin-bottom:0;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+        <div style="width:12px;height:12px;border-radius:50%;background:${g.color};flex-shrink:0;"></div>
+        <div style="font-weight:600;font-size:14px;">${g.name}</div>
+        <span class="badge badge-gray" style="margin-left:2px;">${g.label}</span>
+        <div style="margin-left:auto;display:flex;gap:6px;">
+          <button class="btn btn-secondary btn-xs" onclick="openEditGroup('${g.id}')">管理成員</button>
+          <button class="btn btn-danger btn-xs" onclick="removeGroup('${g.id}')">刪除</button>
+        </div>
+      </div>
+      <div class="tag-list">
+        ${members.length ? members.map(s => `<span class="tag-item"><span style="width:8px;height:8px;border-radius:50%;background:${g.color};display:inline-block;"></span>${s.seatNo} ${s.name}</span>`).join('') : '<span style="color:var(--text3);font-size:12px;">尚無成員</span>'}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openEditGroup(groupId) {
+  const g = state.groups.find(x => x.id === groupId);
+  const c = document.getElementById('editGroupContent');
+  c.innerHTML = `<div style="font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:8px;"><div style="width:10px;height:10px;border-radius:50%;background:${g.color}"></div>${g.name}</div>
+  <div style="max-height:320px;overflow-y:auto;">
+    ${getSortedStudents().map(s => {
+      const inGroup = s.groupId === groupId;
+      return `<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border);">
+        <div class="check-box ${inGroup ? 'checked' : ''}" onclick="toggleStudentInGroup('${s.id}','${groupId}',this)">${inGroup ? 'V' : ''}</div>
+        <span class="badge badge-gray">${s.seatNo}</span><span style="font-size:13px;">${s.name}</span>
+        ${s.groupId && s.groupId !== groupId ? `<span class="badge badge-warning" style="margin-left:auto;font-size:11px;">已在 ${(state.groups.find(gg=>gg.id===s.groupId)||{}).name||''}</span>` : ''}
+      </div>`;
+    }).join('')}
+  </div>`;
+  openModal('editGroupModal');
+}
+
+function toggleStudentInGroup(studentId, groupId, el) {
+  const s = state.students.find(x => x.id === studentId);
+  if (!s) return;
+  if (s.groupId === groupId) { s.groupId = null; el.classList.remove('checked'); el.textContent = ''; } 
+  else { s.groupId = groupId; el.classList.add('checked'); el.textContent = 'V'; }
+  save(); setTimeout(() => openEditGroup(groupId), 50);
+}
+
+// ══════════════════════════════════════════════════════════
+//  ASSIGNMENTS
+// ══════════════════════════════════════════════════════════
+function addAssignment() {
+  const name = document.getElementById('newAssignName').value.trim();
+  const date = document.getElementById('newAssignDate').value;
+  const mode = document.getElementById('newAssignMode').value;
+  const scoreMode = document.getElementById('newAssignScoreMode').value;
+  const maxScore = parseInt(document.getElementById('newAssignMaxScore').value) || 100;
+  if (!name) { alert('請填入作業名稱'); return; }
+  state.assignments.push({ id: uid(), name, date, mode, scoreMode, maxScore, padletUrl: '' });
+  save(); document.getElementById('newAssignName').value = '';
+  renderAssignmentList(); updateAllDropdowns();
+}
+
+function removeAssignment(id) {
+  if (!confirm('確定刪除此作業？所有相關紀錄將一併刪除。')) return;
+  state.assignments = state.assignments.filter(a => a.id !== id);
+  delete state.records[id]; delete state.scores[id]; delete state.adjustments[id];
+  save(); renderAssignmentList(); updateAllDropdowns();
+}
+
+function renderAssignmentList() {
+  const c = document.getElementById('assignmentList');
+  if(!c) return;
+  if (!state.assignments.length) { c.innerHTML = '<div style="color:var(--text3);font-size:13px;padding:12px 0;">尚未新增作業</div>'; return; }
+  c.innerHTML = state.assignments.map((a, i) => {
+    return `<div style="display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--border);flex-wrap:wrap;">
+      <span class="badge badge-gray" style="min-width:28px;justify-content:center;">${i+1}</span>
+      <span style="font-weight:600;font-size:14px;flex:1;min-width:160px;">${a.name}</span>
+      ${a.date ? `<span class="text-xs">${a.date}</span>` : ''}
+      ${a.mode === 'group' ? '<span class="badge badge-accent">小組繳交</span>' : '<span class="badge badge-gray">個人繳交</span>'} 
+      ${a.scoreMode === 'group' ? '<span class="badge badge-warning">小組分數</span>' : '<span class="badge badge-success">個人分數</span>'}
+      <span class="text-xs">滿分 ${a.maxScore}</span>
+      <button class="btn btn-danger btn-xs" onclick="removeAssignment('${a.id}')">刪除</button>
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════════════
+//  RECORDS
+// ══════════════════════════════════════════════════════════
+let recordView = 'individual';
+
+function populateAssignFilter(selId) {
+  const sel = document.getElementById(selId);
+  if (sel) sel.innerHTML = '<option value="">-- 所有作業 --</option>' + state.assignments.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
+}
+function populateAssignSelect(selId) {
+  const sel = document.getElementById(selId);
+  if (sel) sel.innerHTML = '<option value="">-- 選擇作業 --</option>' + state.assignments.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
+}
+
+function switchRecordView(view, el) {
+  recordView = view;
+  document.querySelectorAll('#recordsViewTab .tab-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  renderRecords();
+}
+
+function getRecord(assignId, entityId) {
+  if (!state.records[assignId]) state.records[assignId] = {};
+  return state.records[assignId][entityId] || 'none';
+}
+
+function toggleRecord(assignId, entityId, isGroup) {
+  if (!state.records[assignId]) state.records[assignId] = {};
+  const cur = state.records[assignId][entityId] || 'none';
+  const next = cur === 'none' ? 'submitted' : cur === 'submitted' ? 'late' : 'none';
+  if (isGroup && state.assignments.find(a=>a.id===assignId)?.mode === 'group') {
+    state.students.filter(s => s.groupId === entityId).forEach(s => state.records[assignId][s.id] = next);
+  }
+  state.records[assignId][entityId] = next;
+  save(); renderRecords();
+}
+
+function checkBoxHTML(status) {
+  if (status === 'submitted') return `<div class="check-box checked" title="已交">V</div>`;
+  if (status === 'late') return `<div class="check-box late" title="遲交">L</div>`;
+  return `<div class="check-box" title="未交"></div>`;
+}
+
+function renderRecords() {
+  const filterAssign = document.getElementById('recordAssignFilter')?.value;
+  const assigns = filterAssign ? state.assignments.filter(a => a.id === filterAssign) : state.assignments;
+  const thead = document.getElementById('recordsHead');
+  const tbody = document.getElementById('recordsBody');
+  if(!thead || !tbody) return;
+  if (!assigns.length || !state.students.length) {
+    thead.innerHTML = '<th>-</th>'; tbody.innerHTML = '<tr><td style="color:var(--text3);text-align:center;padding:24px;">請先設定學生與作業</td></tr>'; return;
+  }
+  
+  if (recordView === 'individual') {
+    thead.innerHTML = '<th class="sticky-col-1">座號</th><th class="sticky-col-2">姓名</th><th class="sticky-col-3 sticky-shadow">組別</th>' + assigns.map(a => `<th style="text-align:center;white-space:nowrap;">${a.name}<br><span style="font-size:10px;color:var(--text3);font-weight:400;">${a.mode==='group'?'小組':'個人'}</span></th>`).join('') + '<th>繳交率</th>';
+    // 確保留在個人模式時，依舊為座號排序
+    tbody.innerHTML = getSortedStudents().map(s => {
+      const grp = state.groups.find(g => g.id === s.groupId);
+      let submitted = 0;
+      const cells = assigns.map(a => {
+        let status, entityId;
+        if (a.mode === 'group' && s.groupId) { entityId = s.groupId; status = getRecord(a.id, s.groupId); } 
+        else { entityId = s.id; status = getRecord(a.id, s.id); }
+        if (status !== 'none') submitted++;
+        return `<td class="check-cell" onclick="toggleRecord('${a.id}','${entityId}',${a.mode==='group'})">${checkBoxHTML(status)}</td>`;
+      }).join('');
+      const pct = assigns.length ? Math.round(submitted / assigns.length * 100) : 0;
+      const barColor = pct >= 80 ? 'var(--success)' : pct >= 50 ? 'var(--warning)' : 'var(--danger)';
+      return `<tr>
+        <td class="sticky-col-1"><span class="badge badge-gray">${s.seatNo}</span></td>
+        <td class="sticky-col-2">${s.name}</td>
+        <td class="sticky-col-3 sticky-shadow">${grp ? `<span style="display:inline-flex;align-items:center;gap:5px;"><span style="width:8px;height:8px;border-radius:50%;background:${grp.color};"></span><span style="font-size:12px;">${grp.name}</span></span>` : '<span class="text-xs">未分組</span>'}</td>
+        ${cells}
+        <td><div style="display:flex;align-items:center;gap:6px;"><div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%;background:${barColor};"></div></div><span style="font-size:11px;color:var(--text2);">${pct}%</span></div></td>
+      </tr>`;
+    }).join('');
+  } else {
+    if (!state.groups.length) { tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--text3);padding:24px;">尚未建立組別</td></tr>'; return; }
+    thead.innerHTML = '<th class="sticky-col-grp">組別</th><th class="sticky-col-members sticky-shadow">成員</th>' + assigns.map(a => `<th style="text-align:center;">${a.name}</th>`).join('') + '<th>繳交率</th>';
+    tbody.innerHTML = state.groups.map(g => {
+      // 在小組名單內部的成員也依照座號排序
+      const members = getSortedStudents().filter(s => s.groupId === g.id);
+      let submitted = 0;
+      const cells = assigns.map(a => {
+        const status = getRecord(a.id, g.id);
+        if (status !== 'none') submitted++;
+        return `<td class="check-cell" onclick="toggleRecord('${a.id}','${g.id}',true)">${checkBoxHTML(status)}</td>`;
+      }).join('');
+      const pct = assigns.length ? Math.round(submitted / assigns.length * 100) : 0;
+      const barColor = pct >= 80 ? 'var(--success)' : pct >= 50 ? 'var(--warning)' : 'var(--danger)';
+      return `<tr>
+        <td class="sticky-col-grp"><span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:10px;height:10px;border-radius:50%;background:${g.color}"></span><strong>${g.name}</strong></span></td>
+        <td class="sticky-col-members sticky-shadow"><div style="display:flex;flex-wrap:wrap;gap:4px;">${members.map(s=>`<span class="badge badge-gray">${s.seatNo}</span>`).join('')}</div></td>
+        ${cells}
+        <td><div style="display:flex;align-items:center;gap:6px;"><div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%;background:${barColor};"></div></div><span style="font-size:11px;color:var(--text2);">${pct}%</span></div></td>
+      </tr>`;
+    }).join('');
+  }
+}
+
+function bulkSetAll(val) {
+  const filterAssign = document.getElementById('recordAssignFilter')?.value;
+  const assigns = filterAssign ? state.assignments.filter(a => a.id === filterAssign) : state.assignments;
+  assigns.forEach(a => {
+    if (!state.records[a.id]) state.records[a.id] = {};
+    if (a.mode === 'group') {
+      state.groups.forEach(g => state.records[a.id][g.id] = val ? 'submitted' : 'none');
+      state.students.forEach(s => { if (s.groupId) state.records[a.id][s.id] = val ? 'submitted' : 'none'; });
+    } else {
+      state.students.forEach(s => state.records[a.id][s.id] = val ? 'submitted' : 'none');
+    }
+  });
+  save(); renderRecords();
+}
+
+// ══════════════════════════════════════════════════════════
+//  ATTENDANCE
+// ══════════════════════════════════════════════════════════
+function addAttendanceDate() {
+  const d = document.getElementById('newAttDate').value;
+  const n = document.getElementById('newAttName').value.trim();
+  if(!d && !n) { alert('請填入日期或備註'); return; }
+  state.attendanceDates.push({ id: uid(), date: d, name: n });
+  save(); document.getElementById('newAttDate').value = ''; document.getElementById('newAttName').value = '';
+  renderAttendance();
+}
+
+function removeAttendanceDate(id) {
+  if (!confirm('確定刪除此紀錄？')) return;
+  state.attendanceDates = state.attendanceDates.filter(x => x.id !== id);
+  delete state.attendanceRecords[id];
+  save(); renderAttendance();
+}
+
+function toggleAttendance(dateId, studentId) {
+  if (!state.attendanceRecords[dateId]) state.attendanceRecords[dateId] = {};
+  const cur = state.attendanceRecords[dateId][studentId] || 'none';
+  const next = cur === 'none' ? 'present' : cur === 'present' ? 'absent' : cur === 'absent' ? 'late' : 'none';
+  state.attendanceRecords[dateId][studentId] = next;
+  save(); renderAttendance();
+}
+
+function attBoxHTML(status) {
+  if (status === 'present') return `<div class="check-box checked" title="出席">V</div>`;
+  if (status === 'absent') return `<div class="check-box absent" title="缺席">X</div>`;
+  if (status === 'late') return `<div class="check-box late" title="遲到">L</div>`;
+  return `<div class="check-box" title="未登錄"></div>`;
+}
+
+function getAttendanceRate(studentId) {
+  if(state.attendanceDates.length === 0) return '--';
+  let possible = state.attendanceDates.length;
+  let presentCount = 0;
+  state.attendanceDates.forEach(d => {
+    const status = state.attendanceRecords[d.id]?.[studentId];
+    if (status === 'present' || status === 'late') presentCount++; 
+  });
+  return Math.round(presentCount / possible * 100);
+}
+
+function renderAttendance() {
+  const thead = document.getElementById('attendanceHead');
+  const tbody = document.getElementById('attendanceBody');
+  if(!thead || !tbody) return;
+  if (!state.attendanceDates.length || !state.students.length) {
+    thead.innerHTML = '<th>-</th>'; tbody.innerHTML = '<tr><td style="color:var(--text3);text-align:center;padding:24px;">尚無紀錄</td></tr>'; return;
+  }
+  
+  thead.innerHTML = '<th class="sticky-col-1">座號</th><th class="sticky-col-2 sticky-shadow">姓名</th>' + state.attendanceDates.map(d => `<th style="text-align:center;white-space:nowrap;">${d.date} ${d.name}<br><button class="btn btn-danger btn-xs" style="margin-top:4px;" onclick="removeAttendanceDate('${d.id}')">刪除</button></th>`).join('') + '<th>出席率</th>';
+  
+  // 使用強制的座號排序
+  tbody.innerHTML = getSortedStudents().map(s => {
+    const cells = state.attendanceDates.map(d => {
+      const status = state.attendanceRecords[d.id]?.[s.id] || 'none';
+      return `<td class="check-cell" onclick="toggleAttendance('${d.id}','${s.id}')">${attBoxHTML(status)}</td>`;
+    }).join('');
+    const rate = getAttendanceRate(s.id);
+    const barColor = rate >= 80 ? 'var(--success)' : rate >= 50 ? 'var(--warning)' : 'var(--danger)';
+    return `<tr>
+      <td class="sticky-col-1"><span class="badge badge-gray">${s.seatNo}</span></td>
+      <td class="sticky-col-2 sticky-shadow">${s.name}</td>
+      ${cells}
+      <td><span style="font-weight:700;color:${barColor}">${rate}%</span></td>
+    </tr>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════════════
+//  SCORES
+// ══════════════════════════════════════════════════════════
+let adjAssignId = null, adjGroupId = null;
+
+function renderScores() {
+  const assignId = document.getElementById('scoreAssignSelect').value;
+  const c = document.getElementById('scoresContent');
+  const badge = document.getElementById('scoreModeBadge');
+  if(!c || !badge) return;
+  if (!assignId) { c.innerHTML = '<div style="color:var(--text3);font-size:13px;">請先選擇作業</div>'; badge.textContent=''; return; }
+  const assign = state.assignments.find(a => a.id === assignId);
+  if (!assign) return;
+  badge.textContent = assign.scoreMode === 'group' ? '小組分數模式' : '個人分數模式';
+  badge.className = 'badge ' + (assign.scoreMode === 'group' ? 'badge-warning' : 'badge-success');
+  
+  // 雙重保證這些變數初始化，防止讀取時崩潰
+  if (!state.scores) state.scores = {};
+  if (!state.adjustments) state.adjustments = {};
+  if (!state.scores[assignId]) state.scores[assignId] = {};
+  if (!state.adjustments[assignId]) state.adjustments[assignId] = {};
+
+  if (assign.scoreMode === 'group') {
+    if (!state.groups.length) { c.innerHTML = '<div style="color:var(--text3);">請先建立組別</div>'; return; }
+    c.innerHTML = `<div class="panel">
+      <div class="panel-title"><span>G</span> 小組分數</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th class="sticky-col-grp">組別</th><th class="sticky-col-members sticky-shadow">成員</th><th>組別分數 (/ ${assign.maxScore})</th><th>個別加扣分</th><th>操作</th></tr></thead>
+          <tbody>
+            ${state.groups.map(g => {
+              const members = getSortedStudents().filter(s => s.groupId === g.id);
+              const score = state.scores[assignId][g.id] ?? '';
+              return `<tr>
+                <td class="sticky-col-grp"><span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:8px;height:8px;border-radius:50%;background:${g.color}"></span>${g.name}</span></td>
+                <td class="sticky-col-members sticky-shadow"><div style="display:flex;flex-wrap:wrap;gap:3px;">${members.map(s=>`<span class="badge badge-gray">${s.seatNo} ${s.name}</span>`).join('')}</div></td>
+                <td><input type="number" class="score-input" value="${score}" min="0" max="${assign.maxScore}" placeholder="--" onchange="setGroupScore('${assignId}','${g.id}',this.value,${assign.maxScore})"></td>
+                <td>${members.map(s => { const adj = state.adjustments[assignId][s.id] ?? 0; return `<span style="font-size:12px;margin-right:6px;">${s.seatNo}: <span style="color:${adj>0?'var(--success)':adj<0?'var(--danger)':'var(--text2)'}">${adj>0?'+':''}${adj}</span></span>`; }).join('')}</td>
+                <td><button class="btn btn-secondary btn-xs" onclick="openAdj('${assignId}','${g.id}')">個別加扣分</button></td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+  } else {
+    c.innerHTML = `<div class="panel">
+      <div class="panel-title"><span>S</span> 個人分數</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th class="sticky-col-1">座號</th><th class="sticky-col-2">姓名</th><th class="sticky-col-3 sticky-shadow">組別</th><th>分數 (/ ${assign.maxScore})</th></tr></thead>
+          <tbody>
+            ${getSortedStudents().map(s => {
+              const grp = state.groups.find(g => g.id === s.groupId);
+              const score = state.scores[assignId][s.id] ?? '';
+              return `<tr>
+                <td class="sticky-col-1"><span class="badge badge-gray">${s.seatNo}</span></td>
+                <td class="sticky-col-2">${s.name}</td>
+                <td class="sticky-col-3 sticky-shadow">${grp ? `<span style="font-size:12px;">${grp.name}</span>` : '<span class="text-xs">未分組</span>'}</td>
+                <td><input type="number" class="score-input" value="${score}" min="0" max="${assign.maxScore}" placeholder="--" onchange="setIndivScore('${assignId}','${s.id}',this.value,${assign.maxScore})"></td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+  }
+}
+
+function setGroupScore(assignId, groupId, val, maxScore) {
+  if (!state.scores[assignId]) state.scores[assignId] = {};
+  const score = val === '' ? null : Math.min(parseFloat(val), maxScore);
+  state.scores[assignId][groupId] = score;
+  state.students.filter(s => s.groupId === groupId).forEach(s => {
+      state.scores[assignId][s.id] = score;
+  });
+  save();
+}
+function setIndivScore(assignId, studentId, val, maxScore) {
+  if (!state.scores[assignId]) state.scores[assignId] = {};
+  const score = val === '' ? null : Math.min(parseFloat(val), maxScore);
+  state.scores[assignId][studentId] = score;
+  save();
+}
+
+function openAdj(assignId, groupId) {
+  adjAssignId = assignId; adjGroupId = groupId;
+  const assign = state.assignments.find(a => a.id === assignId);
+  const g = state.groups.find(x => x.id === groupId);
+  const members = getSortedStudents().filter(s => s.groupId === groupId);
+  if (!state.adjustments[assignId]) state.adjustments[assignId] = {};
+  document.getElementById('adjModalTitle').textContent = `${g.name} - 個別加扣分（作業：${assign.name}）`;
+  document.getElementById('adjModalContent').innerHTML = members.map(s => {
+    const adj = state.adjustments[assignId][s.id] ?? 0;
+    const baseScore = state.scores[assignId]?.[groupId] ?? '--';
+    return `<div class="adj-score-row">
+      <span class="badge badge-gray">${s.seatNo}</span><span style="width:80px;font-size:13px;">${s.name}</span>
+      <span style="color:var(--text3);font-size:12px;">基礎：${baseScore}</span>
+      <input type="number" class="score-input" data-sid="${s.id}" value="${adj}" placeholder="0" style="width:70px;">
+      <span style="font-size:11px;color:var(--text2);">加扣分</span>
+    </div>`;
+  }).join('');
+  openModal('adjModal');
+}
+function saveAdj() {
+  if (!state.adjustments[adjAssignId]) state.adjustments[adjAssignId] = {};
+  document.querySelectorAll('#adjModalContent input[data-sid]').forEach(inp => {
+    state.adjustments[adjAssignId][inp.dataset.sid] = parseFloat(inp.value) || 0;
+  });
+  save(); closeModal('adjModal'); renderScores();
+}
+
+// ══════════════════════════════════════════════════════════
+//  PADLET
+// ══════════════════════════════════════════════════════════
+function renderPadlet() {
+  const assignId = document.getElementById('padletAssignSelect').value;
+  const c = document.getElementById('padletContent');
+  if(!c) return;
+  if (!assignId) { c.innerHTML = '<div style="color:var(--text3);font-size:13px;">請選擇作業</div>'; return; }
+  const assign = state.assignments.find(a => a.id === assignId);
+  if (!assign) return;
+  const isGroup = assign.mode === 'group';
+  c.innerHTML = `
+    <div class="panel">
+      <div class="panel-title"><span>P</span> Padlet 連結設定</div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+        <input type="url" id="padletUrl_${assignId}" value="${assign.padletUrl||''}" placeholder="https://padlet.com/..." style="flex:1;min-width:260px;">
+        <button class="btn btn-primary btn-sm" onclick="savePadletUrl('${assignId}')">儲存連結</button>
+        ${assign.padletUrl ? `<a href="${assign.padletUrl}" target="_blank" class="btn btn-success btn-sm">開啟 Padlet</a>` : ''}
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-title"><span>C</span> 手動點選已繳交 (${isGroup ? '小組模式' : '個人模式'})</div>
+      ${isGroup ? renderPadletGroups(assignId) : renderPadletStudents(assignId)}
+      <div style="margin-top:16px;"><button class="btn btn-primary" onclick="syncPadlet('${assignId}',${isGroup})">同步至繳交記錄</button></div>
+    </div>`;
+}
+
+function renderPadletGroups(assignId) {
+  if (!state.groups.length) return '<div style="color:var(--text3);">尚未建立組別</div>';
+  return `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-top:12px;">
+    ${state.groups.map(g => {
+      const status = getRecord(assignId, g.id);
+      return `<div class="padlet-group-card ${status !== 'none' ? 'submitted' : ''}" onclick="togglePadletEntity('${assignId}','${g.id}',this,true)">
+        <div style="width:10px;height:10px;border-radius:50%;background:${g.color};flex-shrink:0;"></div>
+        <div><div style="font-weight:600;font-size:13px;">${g.name}</div><div style="font-size:11px;color:var(--text2);">${getSortedStudents().filter(s=>s.groupId===g.id).map(s=>s.seatNo).join(', ')}</div></div>
+        <div style="margin-left:auto;font-size:14px;">${status !== 'none' ? 'V' : ''}</div>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+function renderPadletStudents(assignId) {
+  if (!state.students.length) return '<div style="color:var(--text3);">尚未新增學生</div>';
+  return `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin-top:8px;">
+    ${getSortedStudents().map(s => {
+      const status = getRecord(assignId, s.id);
+      return `<div class="padlet-group-card ${status !== 'none' ? 'submitted' : ''}" onclick="togglePadletEntity('${assignId}','${s.id}',this,false)">
+        <span class="badge badge-gray">${s.seatNo}</span><span style="font-size:12.5px;">${s.name}</span>
+        <div style="margin-left:auto;font-size:13px;">${status !== 'none' ? 'V' : ''}</div>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+function togglePadletEntity(assignId, entityId, el, isGroup) {
+  if (!state.records[assignId]) state.records[assignId] = {};
+  const cur = state.records[assignId][entityId] || 'none';
+  const next = cur === 'none' ? 'submitted' : 'none';
+  state.records[assignId][entityId] = next;
+  if (isGroup) state.students.filter(s => s.groupId === entityId).forEach(s => state.records[assignId][s.id] = next);
+  el.classList.toggle('submitted', next !== 'none'); el.querySelector('div:last-child').textContent = next !== 'none' ? 'V' : '';
+  save();
+}
+function savePadletUrl(assignId) {
+  const a = state.assignments.find(x => x.id === assignId);
+  if (a) { a.padletUrl = document.getElementById(`padletUrl_${assignId}`).value.trim(); save(); }
+  renderPadlet();
+}
+function syncPadlet(assignId, isGroup) { save(); alert('已同步至繳交記錄！'); }
+
+// ══════════════════════════════════════════════════════════
+//  STATS
+// ══════════════════════════════════════════════════════════
+function getFinalScore(assignId, studentId) {
+  const assign = state.assignments.find(a => a.id === assignId);
+  if (!assign) return null;
+  const base = state.scores[assignId]?.[studentId] ?? null;
+  if (base === null) return null;
+  const adj = state.adjustments[assignId]?.[studentId] ?? 0;
+  return base + adj;
+}
+
+function renderStats() {
+  const c = document.getElementById('statsContent');
+  if(!c) return;
+  if (!state.students.length || !state.assignments.length) { c.innerHTML = '<div style="color:var(--text3);">請先設定學生與作業</div>'; return; }
+  let totalPossible = 0, totalSubmitted = 0;
+  state.assignments.forEach(a => {
+    if (a.mode === 'group') {
+      state.groups.forEach(g => {
+        if (state.students.filter(s => s.groupId === g.id).length) {
+          totalPossible++; if (getRecord(a.id, g.id) !== 'none') totalSubmitted++;
+        }
+      });
+    } else {
+      state.students.forEach(s => { totalPossible++; if (getRecord(a.id, s.id) !== 'none') totalSubmitted++; });
+    }
+  });
+  const overallPct = totalPossible ? Math.round(totalSubmitted / totalPossible * 100) : 0;
+  const pctColor = overallPct >= 80 ? 'var(--success)' : overallPct >= 50 ? 'var(--warning)' : 'var(--danger)';
+
+  const assignBars = state.assignments.map(a => {
+    let tot = 0, sub = 0;
+    if (a.mode === 'group') {
+      state.groups.forEach(g => { if (state.students.filter(s => s.groupId === g.id).length) { tot++; if (getRecord(a.id, g.id) !== 'none') sub++; } });
+    } else {
+      state.students.forEach(s => { tot++; if (getRecord(a.id, s.id) !== 'none') sub++; });
+    }
+    const pct = tot ? Math.round(sub / tot * 100) : 0;
+    const barColor = pct >= 80 ? 'var(--success)' : pct >= 50 ? 'var(--warning)' : 'var(--danger)';
+    return `<div class="chart-bar-row"><div class="chart-bar-label">${a.name}</div><div class="chart-bar-bg"><div class="chart-bar-fill" style="width:${pct}%;background:${barColor};">${pct > 15 ? sub+'/'+tot : ''}</div></div><div class="chart-bar-pct">${pct}%</div></div>`;
+  }).join('');
+
+  c.innerHTML = `
+    <div class="grid-3" style="margin-bottom:20px;">
+      <div class="stat-card">
+        <div class="stat-label">整體繳交率</div>
+        <div class="stat-value" style="color:${pctColor}">${overallPct}%</div>
+        <div class="stat-sub">${totalSubmitted} / ${totalPossible}</div>
+      </div>
+      <div class="stat-card"><div class="stat-label">作業數</div><div class="stat-value">${state.assignments.length}</div><div class="stat-sub">個人 ${state.assignments.filter(a=>a.mode==='individual').length} / 小組 ${state.assignments.filter(a=>a.mode==='group').length}</div></div>
+      <div class="stat-card"><div class="stat-label">學生人數</div><div class="stat-value">${state.students.length}</div><div class="stat-sub">共 ${state.groups.length} 組</div></div>
+    </div>
+    <div class="panel">
+      <div class="panel-title"><span>A</span> 各作業繳交率</div>
+      ${assignBars || '<div style="color:var(--text3);">無資料</div>'}
+    </div>`;
+}
+
+// ══════════════════════════════════════════════════════════
+//  DISPLAY PAGE (STUDENT VIEW)
+// ══════════════════════════════════════════════════════════
+let displayViewMode = 'seat';
+function openDisplay() { document.getElementById('displayPage').classList.add('open'); renderDisplay(); }
+function closeDisplay() { document.getElementById('displayPage').classList.remove('open'); }
+function switchDisplayView(mode, el) { displayViewMode = mode; document.querySelectorAll('#displayPage .tab-btn').forEach(b => b.classList.remove('active')); el.classList.add('active'); renderDisplay(); }
+
+function renderDisplay() {
+  const c = document.getElementById('displayContent');
+  if(!c) return;
+  if (!state.students.length) { c.innerHTML = '<div style="text-align:center;color:var(--text2);">尚無資料</div>'; return; }
+
+  const hasAttendance = state.attendanceDates.length > 0;
+
+  if (displayViewMode === 'seat') {
+    c.innerHTML = `<div class="display-table-wrap">
+      <table class="display-table">
+        <thead><tr>
+          <th class="sticky-col-1">座號</th><th class="sticky-col-2">姓名</th><th class="sticky-col-3 sticky-shadow">組別</th>
+          ${state.assignments.map(a => `<th style="text-align:center;">${a.name}</th>`).join('')}
+          ${hasAttendance ? '<th>出席率</th>' : ''}
+          <th>繳交率</th><th>平均分數</th>
+        </tr></thead>
+        <tbody>
+          ${getSortedStudents().map(s => {
+            const grp = state.groups.find(g => g.id === s.groupId);
+            let sub = 0;
+            const cells = state.assignments.map(a => {
+              const entityId = (a.mode === 'group' && s.groupId) ? s.groupId : s.id;
+              const status = getRecord(a.id, entityId);
+              if (status !== 'none') sub++;
+              const score = getFinalScore(a.id, s.id);
+              const statusDot = status === 'submitted' ? '<span class="submitted-dot"></span>' : status === 'late' ? '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--warning);"></span>' : '<span class="missing-dot"></span>';
+              return `<td style="text-align:center;">${statusDot}${score !== null ? `<span style="font-size:12px;color:var(--text2);margin-left:4px;">${score}</span>` : ''}</td>`;
+            }).join('');
+            const pct = state.assignments.length ? Math.round(sub / state.assignments.length * 100) : 0;
+            const scores = state.assignments.map(a => getFinalScore(a.id, s.id)).filter(v => v !== null);
+            const avg = scores.length ? (scores.reduce((a,b)=>a+b,0)/scores.length).toFixed(1) : '--';
+            const pctColor = pct >= 80 ? 'var(--success)' : pct >= 50 ? 'var(--warning)' : 'var(--danger)';
+            
+            let attCell = '';
+            if (hasAttendance) {
+              const attRate = getAttendanceRate(s.id);
+              const attColor = attRate >= 80 ? 'var(--success)' : attRate >= 50 ? 'var(--warning)' : 'var(--danger)';
+              attCell = `<td><span style="font-weight:700;color:${attColor}">${attRate}%</span></td>`;
+            }
+            
+            return `<tr>
+              <td class="sticky-col-1"><strong>${s.seatNo}</strong></td>
+              <td class="sticky-col-2">${s.name}</td>
+              <td class="sticky-col-3 sticky-shadow">${grp ? `<span style="display:inline-flex;align-items:center;gap:5px;"><span style="width:8px;height:8px;border-radius:50%;background:${grp.color}"></span>${grp.name}</span>` : '<span style="color:var(--text3);font-size:12px;">未分組</span>'}</td>
+              ${cells}
+              ${attCell}
+              <td><span style="font-weight:700;color:${pctColor}">${pct}%</span></td>
+              <td><span style="font-weight:600;">${avg}</span></td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>`;
+  } else {
+    if (!state.groups.length) { c.innerHTML = '<div style="text-align:center;color:var(--text2);">尚未建立組別</div>'; return; }
+    c.innerHTML = state.groups.map(g => {
+      const members = getSortedStudents().filter(s => s.groupId === g.id);
+      return `<div class="panel" style="margin-bottom:20px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;"><div style="width:14px;height:14px;border-radius:50%;background:${g.color}"></div><span style="font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;">${g.name}</span><span class="badge badge-gray">${g.label}</span><span class="badge badge-gray" style="margin-left:auto;">${members.length} 人</span></div>
+        <div class="display-table-wrap">
+          <table class="display-table">
+            <thead><tr>
+              <th class="sticky-col-1">座號</th><th class="sticky-col-2 sticky-shadow">姓名</th>
+              ${state.assignments.map(a => `<th style="text-align:center;">${a.name}</th>`).join('')}
+              ${hasAttendance ? '<th>出席率</th>' : ''}
+              <th>繳交率</th><th>平均分數</th>
+            </tr></thead>
+            <tbody>
+              ${members.map(s => {
+                let sub = 0;
+                const cells = state.assignments.map(a => {
+                  const entityId = (a.mode === 'group' && s.groupId) ? s.groupId : s.id;
+                  const status = getRecord(a.id, entityId);
+                  if (status !== 'none') sub++;
+                  const score = getFinalScore(a.id, s.id);
+                  const statusDot = status === 'submitted' ? '<span class="submitted-dot"></span>' : status === 'late' ? '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--warning);"></span>' : '<span class="missing-dot"></span>';
+                  return `<td style="text-align:center;">${statusDot}${score !== null ? `<span style="font-size:12px;color:var(--text2);margin-left:4px;">${score}</span>` : ''}</td>`;
+                }).join('');
+                const pct = state.assignments.length ? Math.round(sub / state.assignments.length * 100) : 0;
+                const scores = state.assignments.map(a => getFinalScore(a.id, s.id)).filter(v => v !== null);
+                const avg = scores.length ? (scores.reduce((a,b)=>a+b,0)/scores.length).toFixed(1) : '--';
+                const pctColor = pct >= 80 ? 'var(--success)' : pct >= 50 ? 'var(--warning)' : 'var(--danger)';
+                
+                let attCell = '';
+                if (hasAttendance) {
+                  const attRate = getAttendanceRate(s.id);
+                  const attColor = attRate >= 80 ? 'var(--success)' : attRate >= 50 ? 'var(--warning)' : 'var(--danger)';
+                  attCell = `<td><span style="font-weight:700;color:${attColor}">${attRate}%</span></td>`;
+                }
+
+                return `<tr>
+                  <td class="sticky-col-1"><strong>${s.seatNo}</strong></td><td class="sticky-col-2 sticky-shadow">${s.name}</td>
+                  ${cells} ${attCell}
+                  <td><span style="font-weight:700;color:${pctColor}">${pct}%</span></td>
+                  <td><span style="font-weight:600;">${avg}</span></td>
+                </tr>`;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>`;
+    }).join('');
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+//  LINKS & SHORT URL (Student, TA, Sync)
+// ══════════════════════════════════════════════════════════
+function showLinkModal(title, url) {
+  document.getElementById('linkModalTitle').textContent = title;
+  document.getElementById('linkLongUrl').value = url;
+  openModal('linkModal');
+}
+
+function openMyPpt() {
+    const longUrl = document.getElementById('linkLongUrl');
+    longUrl.select();
+    document.execCommand('copy');
+    alert('✅ 已為您複製長網址！\n由於 myppt.cc 未提供自動化介接服務，系統即將為您開啟網站，請直接「貼上」並點擊轉換。');
+    window.open('https://myppt.cc/', '_blank');
+}
+
+function copyStudentLink() {
+  const b64Data = compressData(state);
+  const link = `${window.location.href.split('?')[0].split('#')[0]}?mode=student#data=${b64Data}`;
+  showLinkModal('🔗 複製學生展示連結', link);
+}
+
+function copyTaLink() {
+  const taState = {
+    students: state.students,
+    groups: state.groups,
+    assignments: state.assignments.map(a => ({ id: a.id, name: a.name, mode: a.mode, maxScore: a.maxScore, scoreMode: a.scoreMode })), 
+    records: state.records,
+    scores: state.scores,           // 修復：加入分數以便小老師能正常預覽
+    adjustments: state.adjustments, // 修復：加入分數加扣分
+    attendanceDates: state.attendanceDates,
+    attendanceRecords: state.attendanceRecords
+  };
+  const b64Data = compressData(taState);
+  const link = `${window.location.href.split('?')[0].split('#')[0]}?mode=ta#data=${b64Data}`;
+  showLinkModal('👨‍🏫 複製小老師連結', link);
+}
+
+function generateSyncLink() {
+  // 核心修正：將所有資料（包含最新的作業與名單設定）整包回傳，確保老師點開後能全面覆寫舊記憶體
+  const exportData = state; 
+  const b64Data = compressData(exportData);
+  const link = `${window.location.href.split('?')[0].split('#')[0]}?mode=sync#data=${b64Data}`;
+  showLinkModal('📤 產生回傳同步連結', link);
+}
+
+// ══════════════════════════════════════════════════════════
+//  MODALS
+// ══════════════════════════════════════════════════════════
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(m => { m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); }); });
+
+// ══════════════════════════════════════════════════════════
+//  IMPORT / EXPORT
+// ══════════════════════════════════════════════════════════
+function exportData() {
+  const blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'sixhats_backup_' + new Date().toISOString().slice(0,10) + '.json'; a.click();
+}
+
+function importData(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const r = new FileReader();
+  r.onload = ev => {
+    try {
+      if (confirm('確定匯入？現有資料將被覆蓋。')) { state = JSON.parse(ev.target.result); save(); location.reload(); }
+    } catch(err) { alert('檔案格式錯誤'); }
+  };
+  r.readAsText(file); e.target.value = '';
+}
+
+function clearAll() {
+  if (!confirm('確定清除所有資料？此操作無法復原！')) return;
+  state = { students:[], groups:[], assignments:[], records:{}, scores:{}, adjustments:{}, attendanceDates:[], attendanceRecords:{} };
+  save(); location.reload();
+}
+
+function exportExcel() {
+  if (!state.students.length) { alert('沒有學生資料可匯出'); return; }
+  let csv = '\uFEFF'; 
+  let headers = ['座號', '姓名', '組別'];
+  state.assignments.forEach(a => headers.push(a.name));
+  headers.push('出席率', '繳交率', '平均分數');
+  csv += headers.join(',') + '\n';
+  
+  getSortedStudents().forEach(s => {
+    const grp = state.groups.find(g => g.id === s.groupId);
+    let row = [`"${s.seatNo}"`, `"${s.name}"`, `"${grp ? grp.name : '未分組'}"`];
+    let sub = 0;
+    state.assignments.forEach(a => {
+      const entityId = (a.mode === 'group' && s.groupId) ? s.groupId : s.id;
+      const status = getRecord(a.id, entityId);
+      if (status !== 'none') sub++;
+      const score = getFinalScore(a.id, s.id);
+      let cellText = status === 'submitted' ? '已交' : status === 'late' ? '遲交' : '未交';
+      if (score !== null) cellText += ` (${score})`;
+      row.push(`"${cellText}"`);
+    });
+    const attRate = getAttendanceRate(s.id);
+    const pct = state.assignments.length ? Math.round(sub / state.assignments.length * 100) : 0;
+    const scores = state.assignments.map(a => getFinalScore(a.id, s.id)).filter(v => v !== null);
+    const avg = scores.length ? (scores.reduce((a,b)=>a+b,0)/scores.length).toFixed(1) : '--';
+    row.push(`"${attRate}%"`, `"${pct}%"`, `"${avg}"`);
+    csv += row.join(',') + '\n';
+  });
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'sixhats_stats.csv'; a.click();
+}
+
+// ══════════════════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════════════════
+if (isStudentMode) {
+  document.body.classList.add('student-mode');
+  const
