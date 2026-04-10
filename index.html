@@ -392,52 +392,17 @@
   /* Hide TA items in normal mode */
   .ta-only { display: none; }
 
-  /* ─── MOBILE UI ─── */
-  .mobile-menu-btn {
-    display: none;
-    position: fixed;
-    top: 16px; right: 16px;
-    width: 42px; height: 42px;
-    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
-    color: var(--text); font-size: 22px; cursor: pointer; z-index: 1001;
-    box-shadow: var(--shadow);
-  }
-  .mobile-fab-sync { display: none !important; }
-
   @media (max-width: 768px) {
-    .mobile-menu-btn { display: flex; align-items: center; justify-content: center; }
-    .sidebar { transform: translateX(-100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 4px 0 24px rgba(0,0,0,0.5); }
-    .sidebar.open { transform: translateX(0); }
-    .main { margin-left: 0; padding: 16px; padding-top: 64px; }
+    .sidebar { transform: translateX(-220px); }
+    .main { margin-left: 0; padding: 16px; }
     .grid-2, .grid-3 { grid-template-columns: 1fr; }
-    
-    /* 小老師手機版專屬浮動按鈕 */
-    body.ta-mode .mobile-fab-sync {
-      display: flex !important;
-      position: fixed;
-      bottom: 24px;
-      right: 24px;
-      background: var(--surface);
-      border: 2px solid var(--accent);
-      color: var(--accent2);
-      padding: 14px 20px;
-      border-radius: 30px;
-      font-family: 'Noto Sans TC', sans-serif;
-      font-size: 14.5px;
-      font-weight: 700;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.6);
-      z-index: 1000;
-      cursor: pointer;
-      align-items: center;
-      gap: 8px;
-    }
+    /* Ensure TA sync button visible on mobile */
+    .ta-sync-mobile { display: block !important; margin-bottom: 20px; }
   }
 </style>
 </head>
 <body>
 <div class="app">
-  <button class="mobile-menu-btn" onclick="document.querySelector('.sidebar').classList.toggle('open')">☰</button>
-  
   <aside class="sidebar">
     <div class="sidebar-logo">
       <div class="title">Six Thinking Hats</div>
@@ -554,6 +519,13 @@
         <h1>繳交記錄</h1>
         <p>點擊格子切換繳交狀態（空白 / 已交 / 遲交）</p>
       </div>
+
+      <div class="ta-only ta-sync-mobile" style="display:none;">
+        <button class="btn btn-primary" onclick="generateSyncLink()" style="width:100%; justify-content:center; background:var(--accent2); border:1px solid var(--accent); margin-bottom:15px; padding:12px;">
+           📤 產生同步連結回傳老師
+        </button>
+      </div>
+
       <div style="display:flex; gap:10px; align-items:center; margin-bottom:16px; flex-wrap:wrap;">
         <div class="tab-row" id="recordsViewTab">
           <button class="tab-btn active" onclick="switchRecordView('individual', this)">個人檢視</button>
@@ -627,8 +599,6 @@
       </div>
       <div id="statsContent"></div>
     </div>
-
-    <button class="mobile-fab-sync" onclick="generateSyncLink()">📤 產生回傳同步連結</button>
 
   </main>
 </div>
@@ -710,12 +680,11 @@ if (isTaMode) {
 // ══════════════════════════════════════════════════════════
 //  DATA STORE & COMPRESSION
 // ══════════════════════════════════════════════════════════
-// 使用壓縮技術處理網址，避免資料多時網址超長被截斷
 function compressData(data) {
   try {
     return encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(data)))));
   } catch(e) {
-    return btoa(encodeURIComponent(JSON.stringify(data))); // 備用方案
+    return btoa(encodeURIComponent(JSON.stringify(data)));
   }
 }
 
@@ -724,7 +693,7 @@ function decompressData(str) {
     return JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(str)))));
   } catch(e) {
     try {
-      return JSON.parse(decodeURIComponent(atob(str))); // 兼容舊版資料
+      return JSON.parse(decodeURIComponent(atob(str)));
     } catch(e2) {
       return JSON.parse(decodeURIComponent(atob(decodeURIComponent(str))));
     }
@@ -732,21 +701,22 @@ function decompressData(str) {
 }
 
 let state = {
-  students: [],    // {id, name, seatNo, groupId}
-  groups: [],      // {id, name, label, color}
-  assignments: [], // {id, name, date, mode, scoreMode, maxScore, padletUrl}
-  records: {},     // {assignId: {studentId|groupId: 'none'|'submitted'|'late'}}
-  scores: {},      // {assignId: {studentId|groupId: number}}
-  adjustments: {}, // {assignId: {studentId: number}}
-  attendanceDates: [], // {id, date, name}
-  attendanceRecords: {} // {dateId: {studentId: 'present'|'absent'|'late'}}
+  students: [],
+  groups: [],
+  assignments: [],
+  records: {},
+  scores: {},
+  adjustments: {},
+  attendanceDates: [],
+  attendanceRecords: {}
 };
+
+const GROUP_COLORS = ['#6c63ff','#ff5c5c','#06d6a0','#ffd166','#118ab2','#ff9f1c','#e63946','#2ec4b6','#a8dadc','#c77dff'];
 
 function save() { localStorage.setItem('sixhats_v4', JSON.stringify(state)); }
 
 function load() {
   let loadedFromUrl = false;
-  // 若是特殊模式(學生或TA)，從網址讀取資料
   if (isStudentMode || isTaMode || appMode === 'sync') {
     try {
       const hashData = window.location.hash.match(/data=([^&]*)/);
@@ -754,13 +724,11 @@ function load() {
         const urlData = decompressData(hashData[1]);
         
         if (appMode === 'sync') {
-          // 老師接收小老師的回傳資料：僅更新紀錄，不蓋掉原本人員設定
           const localData = localStorage.getItem('sixhats_v4');
           if (localData) state = JSON.parse(localData);
           state.records = urlData.records || state.records;
           state.attendanceRecords = urlData.attendanceRecords || state.attendanceRecords;
           
-          // 同步小老師新增的出缺席日期
           if (urlData.attendanceDates) {
             urlData.attendanceDates.forEach(ud => {
               if (!state.attendanceDates.find(sd => sd.id === ud.id)) {
@@ -771,14 +739,11 @@ function load() {
           
           save();
           alert('✅ 小老師的登記資料已成功同步到系統！');
-          window.location.href = window.location.href.split('?')[0]; // 移除參數重新整理
+          window.location.href = window.location.href.split('?')[0];
           return;
         } else {
-          // 學生或 TA 直接套用 url 的資料
           state = urlData;
           loadedFromUrl = true;
-          
-          // 若是小老師，自動將資料存入本地並移除網址上的 hash，避免重新整理後資料遺失
           if (isTaMode) {
              window.history.replaceState(null, '', window.location.pathname + '?mode=ta');
              save();
@@ -793,7 +758,6 @@ function load() {
     if (d) { 
       try { 
         let parsed = JSON.parse(d);
-        // 防呆確保結構完整
         if(!parsed.attendanceDates) parsed.attendanceDates = [];
         if(!parsed.attendanceRecords) parsed.attendanceRecords = {};
         if(!parsed.assignments) parsed.assignments = [];
@@ -806,7 +770,6 @@ load();
 
 function uid() { return '_' + Math.random().toString(36).slice(2, 10); }
 
-// 強制更新所有下拉選單
 function updateAllDropdowns() {
   populateAssignFilter('recordAssignFilter');
   populateAssignSelect('scoreAssignSelect');
@@ -830,11 +793,6 @@ function navigate(el) {
   if (page === 'stats') renderStats();
   if (page === 'setup-students') renderStudentTable();
   if (page === 'setup-groups') renderGroupCards();
-  
-  // 在手機版點擊選單後自動關閉側邊欄
-  if (window.innerWidth <= 768) {
-    document.querySelector('.sidebar').classList.remove('open');
-  }
 }
 
 // ══════════════════════════════════════════════════════════
@@ -861,10 +819,10 @@ function removeStudent(id) {
 
 function renderStudentTable() {
   const tbody = document.getElementById('studentTable');
+  if(!tbody) return;
   document.getElementById('studentCount').textContent = state.students.length;
   if (!state.students.length) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text3);padding:24px;">尚未新增學生</td></tr>'; return; }
   tbody.innerHTML = state.students.map(s => {
-    const grp = state.groups.find(g => g.id === s.groupId);
     const groupOpts = '<option value="">-- 未分組 --</option>' + state.groups.map(g => `<option value="${g.id}" ${s.groupId === g.id ? 'selected' : ''}>${g.name}</option>`).join('');
     return `<tr>
       <td><span class="badge badge-gray">${s.seatNo}</span></td>
@@ -890,10 +848,9 @@ function doBulkImport() {
       const p1 = parts[0];
       const p2 = parts[parts.length - 1];
       let name, seatNo;
-      // 智慧判斷哪一個是數字作為座號
       if (/^\d+$/.test(p1)) { seatNo = p1; name = p2; }
       else if (/^\d+$/.test(p2)) { seatNo = p2; name = p1; }
-      else { seatNo = p1; name = p2; } // 無法判斷則依照預設
+      else { seatNo = p1; name = p2; }
 
       if (!state.students.find(s => s.seatNo === seatNo)) {
         state.students.push({ id: uid(), name, seatNo, groupId: null });
@@ -929,6 +886,7 @@ function removeGroup(id) {
 
 function renderGroupCards() {
   const c = document.getElementById('groupCards');
+  if(!c) return;
   if (!state.groups.length) { c.innerHTML = '<div style="color:var(--text3);font-size:13px;padding:12px 0;">尚未建立組別</div>'; return; }
   c.innerHTML = state.groups.map(g => {
     const members = state.students.filter(s => s.groupId === g.id);
@@ -998,6 +956,7 @@ function removeAssignment(id) {
 
 function renderAssignmentList() {
   const c = document.getElementById('assignmentList');
+  if(!c) return;
   if (!state.assignments.length) { c.innerHTML = '<div style="color:var(--text3);font-size:13px;padding:12px 0;">尚未新增作業</div>'; return; }
   c.innerHTML = state.assignments.map((a, i) => {
     return `<div style="display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--border);flex-wrap:wrap;">
@@ -1011,7 +970,6 @@ function renderAssignmentList() {
     </div>`;
   }).join('');
 }
-renderAssignmentList();
 
 // ══════════════════════════════════════════════════════════
 //  RECORDS
@@ -1061,6 +1019,7 @@ function renderRecords() {
   const assigns = filterAssign ? state.assignments.filter(a => a.id === filterAssign) : state.assignments;
   const thead = document.getElementById('recordsHead');
   const tbody = document.getElementById('recordsBody');
+  if(!thead || !tbody) return;
   if (!assigns.length || !state.students.length) {
     thead.innerHTML = '<th>-</th>'; tbody.innerHTML = '<tr><td style="color:var(--text3);text-align:center;padding:24px;">請先設定學生與作業</td></tr>'; return;
   }
@@ -1147,7 +1106,6 @@ function removeAttendanceDate(id) {
 function toggleAttendance(dateId, studentId) {
   if (!state.attendanceRecords[dateId]) state.attendanceRecords[dateId] = {};
   const cur = state.attendanceRecords[dateId][studentId] || 'none';
-  // Cycle: none -> present -> absent -> late -> none
   const next = cur === 'none' ? 'present' : cur === 'present' ? 'absent' : cur === 'absent' ? 'late' : 'none';
   state.attendanceRecords[dateId][studentId] = next;
   save(); renderAttendance();
@@ -1167,7 +1125,6 @@ function getAttendanceRate(studentId) {
   state.attendanceDates.forEach(d => {
     const status = state.attendanceRecords[d.id]?.[studentId];
     if (status === 'present' || status === 'late') presentCount++; 
-    // 將遲到視為有出席(部分分數由老師決定，這裡以單純出席率來說算有到)
   });
   return Math.round(presentCount / possible * 100);
 }
@@ -1175,6 +1132,7 @@ function getAttendanceRate(studentId) {
 function renderAttendance() {
   const thead = document.getElementById('attendanceHead');
   const tbody = document.getElementById('attendanceBody');
+  if(!thead || !tbody) return;
   if (!state.attendanceDates.length || !state.students.length) {
     thead.innerHTML = '<th>-</th>'; tbody.innerHTML = '<tr><td style="color:var(--text3);text-align:center;padding:24px;">尚無紀錄</td></tr>'; return;
   }
@@ -1206,6 +1164,7 @@ function renderScores() {
   const assignId = document.getElementById('scoreAssignSelect').value;
   const c = document.getElementById('scoresContent');
   const badge = document.getElementById('scoreModeBadge');
+  if(!c || !badge) return;
   if (!assignId) { c.innerHTML = '<div style="color:var(--text3);font-size:13px;">請先選擇作業</div>'; badge.textContent=''; return; }
   const assign = state.assignments.find(a => a.id === assignId);
   if (!assign) return;
@@ -1228,7 +1187,7 @@ function renderScores() {
               return `<tr>
                 <td><span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:8px;height:8px;border-radius:50%;background:${g.color}"></span>${g.name}</span></td>
                 <td><div style="display:flex;flex-wrap:wrap;gap:3px;">${members.map(s=>`<span class="badge badge-gray">${s.seatNo}</span>`).join('')}</div></td>
-                <td><input type="number" class="score-input" value="${score}" min="0" max="${assign.maxScore}" placeholder="--" onchange="setGroupScore('${assignId}','${g.id}',this.value,'${assign.maxScore}')"></td>
+                <td><input type="number" class="score-input" value="${score}" min="0" max="${assign.maxScore}" placeholder="--" onchange="setGroupScore('${assignId}','${g.id}',this.value,${assign.maxScore})"></td>
                 <td>${members.map(s => { const adj = state.adjustments[assignId][s.id] ?? 0; return `<span style="font-size:12px;margin-right:6px;">${s.seatNo}: <span style="color:${adj>0?'var(--success)':adj<0?'var(--danger)':'var(--text2)'}">${adj>0?'+':''}${adj}</span></span>`; }).join('')}</td>
                 <td><button class="btn btn-secondary btn-xs" onclick="openAdj('${assignId}','${g.id}')">個別加扣分</button></td>
               </tr>`;
@@ -1251,7 +1210,7 @@ function renderScores() {
                 <td><span class="badge badge-gray">${s.seatNo}</span></td>
                 <td>${s.name}</td>
                 <td>${grp ? `<span style="font-size:12px;">${grp.name}</span>` : '<span class="text-xs">未分組</span>'}</td>
-                <td><input type="number" class="score-input" value="${score}" min="0" max="${assign.maxScore}" placeholder="--" onchange="setIndivScore('${assignId}','${s.id}',this.value)"></td>
+                <td><input type="number" class="score-input" value="${score}" min="0" max="${assign.maxScore}" placeholder="--" onchange="setIndivScore('${assignId}','${s.id}',this.value,${assign.maxScore})"></td>
               </tr>`;
             }).join('')}
           </tbody>
@@ -1265,13 +1224,18 @@ function setGroupScore(assignId, groupId, val, maxScore) {
   if (!state.scores[assignId]) state.scores[assignId] = {};
   const score = val === '' ? null : Math.min(parseFloat(val), maxScore);
   state.scores[assignId][groupId] = score;
-  state.students.filter(s => s.groupId === groupId).forEach(s => state.scores[assignId][s.id] = score);
+  state.students.filter(s => s.groupId === groupId).forEach(s => {
+      state.scores[assignId][s.id] = score;
+  });
   save();
 }
-function setIndivScore(assignId, studentId, val) {
+function setIndivScore(assignId, studentId, val, maxScore) {
   if (!state.scores[assignId]) state.scores[assignId] = {};
-  state.scores[assignId][studentId] = val === '' ? null : parseFloat(val); save();
+  const score = val === '' ? null : Math.min(parseFloat(val), maxScore);
+  state.scores[assignId][studentId] = score;
+  save();
 }
+
 function openAdj(assignId, groupId) {
   adjAssignId = assignId; adjGroupId = groupId;
   const assign = state.assignments.find(a => a.id === assignId);
@@ -1305,6 +1269,7 @@ function saveAdj() {
 function renderPadlet() {
   const assignId = document.getElementById('padletAssignSelect').value;
   const c = document.getElementById('padletContent');
+  if(!c) return;
   if (!assignId) { c.innerHTML = '<div style="color:var(--text3);font-size:13px;">請選擇作業</div>'; return; }
   const assign = state.assignments.find(a => a.id === assignId);
   if (!assign) return;
@@ -1380,6 +1345,7 @@ function getFinalScore(assignId, studentId) {
 
 function renderStats() {
   const c = document.getElementById('statsContent');
+  if(!c) return;
   if (!state.students.length || !state.assignments.length) { c.innerHTML = '<div style="color:var(--text3);">請先設定學生與作業</div>'; return; }
   let totalPossible = 0, totalSubmitted = 0;
   state.assignments.forEach(a => {
@@ -1434,6 +1400,7 @@ function switchDisplayView(mode, el) { displayViewMode = mode; document.querySel
 
 function renderDisplay() {
   const c = document.getElementById('displayContent');
+  if(!c) return;
   if (!state.students.length) { c.innerHTML = '<div style="text-align:center;color:var(--text2);">尚無資料</div>'; return; }
 
   const hasAttendance = state.attendanceDates.length > 0;
@@ -1542,12 +1509,10 @@ function renderDisplay() {
 function copyStudentLink() {
   const b64Data = compressData(state);
   const link = `${window.location.href.split('?')[0].split('#')[0]}?mode=student#data=${b64Data}`;
-  if (link.length > 3000) alert('注意：資料量較大，連結較長，建議使用短網址服務縮短後傳給學生。');
-  navigator.clipboard.writeText(link).then(() => alert('✅ 已成功複製「學生專屬展示連結」！')).catch(() => prompt('請手動複製以下連結並傳給學生：', link));
+  navigator.clipboard.writeText(link).then(() => alert('✅ 已成功複製「學生專屬展示連結」！')).catch(() => prompt('請手動複製以下連結：', link));
 }
 
 function copyTaLink() {
-  // 只擷取必要資訊，避免網址超長被截斷
   const taState = {
     students: state.students,
     groups: state.groups,
@@ -1558,11 +1523,10 @@ function copyTaLink() {
   };
   const b64Data = compressData(taState);
   const link = `${window.location.href.split('?')[0].split('#')[0]}?mode=ta#data=${b64Data}`;
-  navigator.clipboard.writeText(link).then(() => alert('✅ 已成功複製「小老師專屬連結」！\n小老師只能看見繳交紀錄與出缺席，並可產生回傳連結給您。')).catch(() => prompt('請手動複製以下小老師連結：', link));
+  navigator.clipboard.writeText(link).then(() => alert('✅ 已成功複製「小老師專屬連結」！')).catch(() => prompt('請手動複製連結：', link));
 }
 
 function generateSyncLink() {
-  // TA 只會回傳 records 和 attendanceRecords，以及新增的出缺席日期
   const exportData = { 
     records: state.records, 
     attendanceRecords: state.attendanceRecords,
@@ -1570,7 +1534,7 @@ function generateSyncLink() {
   };
   const b64Data = compressData(exportData);
   const link = `${window.location.href.split('?')[0].split('#')[0]}?mode=sync#data=${b64Data}`;
-  navigator.clipboard.writeText(link).then(() => alert('✅ 已成功複製「同步連結」！\n請將這個連結傳給老師，老師打開後即可自動同步您的登記紀錄。')).catch(() => prompt('請複製以下連結並傳給老師：', link));
+  navigator.clipboard.writeText(link).then(() => alert('✅ 已成功複製「同步連結」！\n請將連結傳給老師進行同步。')).catch(() => prompt('請複製連結：', link));
 }
 
 // ══════════════════════════════════════════════════════════
@@ -1608,16 +1572,13 @@ function clearAll() {
 function exportExcel() {
   if (!state.students.length) { alert('沒有學生資料可匯出'); return; }
   let csv = '\uFEFF'; 
-  
   let headers = ['座號', '姓名', '組別'];
   state.assignments.forEach(a => headers.push(a.name));
   headers.push('出席率', '繳交率', '平均分數');
   csv += headers.join(',') + '\n';
-
   state.students.forEach(s => {
     const grp = state.groups.find(g => g.id === s.groupId);
     let row = [`"${s.seatNo}"`, `"${s.name}"`, `"${grp ? grp.name : '未分組'}"`];
-
     let sub = 0;
     state.assignments.forEach(a => {
       const entityId = (a.mode === 'group' && s.groupId) ? s.groupId : s.id;
@@ -1628,18 +1589,15 @@ function exportExcel() {
       if (score !== null) cellText += ` (${score})`;
       row.push(`"${cellText}"`);
     });
-
     const attRate = getAttendanceRate(s.id);
     const pct = state.assignments.length ? Math.round(sub / state.assignments.length * 100) : 0;
     const scores = state.assignments.map(a => getFinalScore(a.id, s.id)).filter(v => v !== null);
     const avg = scores.length ? (scores.reduce((a,b)=>a+b,0)/scores.length).toFixed(1) : '--';
-
     row.push(`"${attRate}%"`, `"${pct}%"`, `"${avg}"`);
     csv += row.join(',') + '\n';
   });
-
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'sixhats_作業統計_' + new Date().toISOString().slice(0,10) + '.csv'; a.click();
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'sixhats_stats.csv'; a.click();
 }
 
 // ══════════════════════════════════════════════════════════
@@ -1652,7 +1610,6 @@ if (isStudentMode) {
   document.getElementById('displayPage').classList.add('open');
   renderDisplay();
 } else if (isTaMode) {
-  // 小老師模式，預設開啟繳交紀錄
   updateAllDropdowns();
   renderRecords();
   document.querySelector('[data-page="records"]').classList.add('active');
