@@ -432,7 +432,6 @@ function load() {
     const d = localStorage.getItem('sixhats_v5');
     if (d) {
       const parsed = JSON.parse(d);
-      // 防呆設計：確保所有屬性都有預設值，避免舊版快取導致 map is not a function 錯誤
       state.students = parsed.students || [];
       state.groups = parsed.groups || [];
       state.assignments = parsed.assignments || [];
@@ -486,7 +485,6 @@ function addStudent() {
   save(); 
   renderStudentTable();
   
-  // 清空輸入框
   nameInput.value = '';
   seatInput.value = '';
 }
@@ -511,6 +509,11 @@ function updateSGroup(sid, gid) {
 
 function delStudent(id) { 
     state.students = state.students.filter(s=>s.id!==id); 
+    // 清除該學生的相關資料
+    for(let aid in state.records) delete state.records[aid][id];
+    for(let aid in state.scores) if(state.assignments.find(a=>a.id===aid)?.scoreMode !== 'group') delete state.scores[aid][id];
+    for(let aid in state.adjustments) delete state.adjustments[aid][id];
+    for(let d in state.attendance) delete state.attendance[d][id];
     save(); 
     renderStudentTable(); 
 }
@@ -535,7 +538,7 @@ function addGroup() {
   state.groups.push({ id: uid(), name });
   save(); 
   renderGroupCards();
-  renderStudentTable(); // 更新學生清單中的群組下拉選單
+  renderStudentTable(); 
   nameInput.value = '';
 }
 
@@ -551,6 +554,7 @@ function renderGroupCards() {
 function delGroup(id) { 
     state.groups = state.groups.filter(g=>g.id!==id); 
     state.students.forEach(s => { if(s.groupId === id) s.groupId = null; });
+    for(let aid in state.scores) delete state.scores[aid][id]; // 清除群組分數
     save(); 
     renderGroupCards(); 
     renderStudentTable();
@@ -573,7 +577,6 @@ function addAssignment() {
   save(); 
   renderAssignList();
   
-  // 清空輸入框
   nameInput.value = '';
   maxInput.value = '100';
 }
@@ -589,6 +592,10 @@ function renderAssignList() {
 
 function delAssign(id) { 
     state.assignments = state.assignments.filter(a=>a.id!==id); 
+    // 清除該作業相關分數與紀錄
+    delete state.scores[id];
+    delete state.adjustments[id];
+    delete state.records[id];
     save(); 
     renderAssignList(); 
 }
@@ -621,19 +628,32 @@ function toggleRec(aid, sid) {
 // ══════════════════════════════════════════════════════════
 function populateScoreSelect() {
     const sel = document.getElementById('scoreAssignSelect');
-    sel.innerHTML = state.assignments.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
+    if (!sel) return;
+    
+    if (state.assignments.length === 0) {
+        sel.innerHTML = '<option value="" disabled selected>尚無作業</option>';
+    } else {
+        // 加入一個預設佔位選項，強制使用者發生切換動作，解決 onchange 不觸發的問題
+        sel.innerHTML = '<option value="" disabled selected>請選擇作業...</option>' + 
+            state.assignments.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
+    }
 }
 
 function renderScores() {
     const selectEl = document.getElementById('scoreAssignSelect');
     const container = document.getElementById('scoresContent');
     
-    if(!selectEl || selectEl.options.length === 0) {
+    if(!selectEl || state.assignments.length === 0) {
         container.innerHTML = "<p style='color:var(--text2);'>請先至「設定 > 作業設定」建立作業</p>"; 
         return; 
     }
 
     const aid = selectEl.value;
+    if(!aid) {
+        container.innerHTML = "<p style='color:var(--text2);'>請從上方下拉選單選擇一項作業以進行評分。</p>";
+        return;
+    }
+
     const assign = state.assignments.find(a => a.id === aid);
     if(!assign) return;
 
@@ -643,7 +663,6 @@ function renderScores() {
         <div class="table-wrap" style="margin-top:12px;"><table>
             <thead><tr><th>組別</th><th>分數</th><th>操作</th></tr></thead>
             <tbody>` + state.groups.map(g => {
-                // 修復 0 分被判定為空的 Bug
                 let score = (state.scores[aid] || {})[g.id];
                 const displayScore = (score !== undefined && score !== null) ? score : '';
                 return `<tr>
@@ -657,7 +676,6 @@ function renderScores() {
         <div class="table-wrap" style="margin-top:12px;"><table>
             <thead><tr><th>座號</th><th>姓名</th><th>分數</th></tr></thead>
             <tbody>` + state.students.map(s => {
-                // 修復 0 分被判定為空的 Bug
                 let score = (state.scores[aid] || {})[s.id];
                 const displayScore = (score !== undefined && score !== null) ? score : '';
                 return `<tr>
@@ -673,7 +691,7 @@ function renderScores() {
 function setScore(aid, entityId, val) {
     if(!state.scores[aid]) state.scores[aid] = {};
     if(val.trim() === '') {
-        delete state.scores[aid][entityId]; // 若清空欄位則刪除該筆分數
+        delete state.scores[aid][entityId]; 
     } else {
         state.scores[aid][entityId] = parseFloat(val);
     }
